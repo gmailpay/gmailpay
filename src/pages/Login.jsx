@@ -1,7 +1,145 @@
-import{useState,useEffect}from"react";import{supabase}from"@/lib/supabaseClient";import{Button}from"@/components/ui/button";import{Input}from"@/components/ui/input";import{Label}from"@/components/ui/label";import{Loader2}from"lucide-react";import{toast}from"sonner";import{useNavigate}from"react-router-dom";import{useAuth}from"@/lib/AuthContext";
-export default function Login(){const nav=useNavigate();const{isAuthenticated}=useAuth();const[email,setEmail]=useState("");const[password,setPassword]=useState("");const[fullName,setFullName]=useState("");const[loading,setLoading]=useState(false);const[isSignUp,setIsSignUp]=useState(false);const[errorMsg,setErrorMsg]=useState("");
-useEffect(()=>{if(isAuthenticated)nav("/Dashboard",{replace:true});},[isAuthenticated,nav]);
-const handleAuth=async(e)=>{e.preventDefault();setLoading(true);setErrorMsg("");
-const timeout=setTimeout(()=>{setLoading(false);setErrorMsg("Request timed out. Please try again.");},15000);
-try{if(isSignUp){const{data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:fullName}}});clearTimeout(timeout);if(error)throw error;toast.success("Account created!");if(!data?.session)setIsSignUp(false);}else{const{data,error}=await supabase.auth.signInWithPassword({email,password});clearTimeout(timeout);if(error)throw error;toast.success("Signed in!");}}catch(err){clearTimeout(timeout);setErrorMsg(err.message);toast.error(err.message);}finally{setLoading(false);}};
-return(<div className="min-h-screen bg-background flex items-center justify-center p-4"><div className="w-full max-w-md"><div className="text-center mb-8"><h1 className="font-orbitron text-3xl font-bold text-foreground">GMAIL<span className="text-primary">PAY</span></h1></div><form onSubmit={handleAuth}className="bg-card border border-border rounded-xl p-6 space-y-4">{isSignUp&&<div><Label>Full Name</Label><Input placeholder="Name"value={fullName}onChange={e=>setFullName(e.target.value)}className="bg-secondary border-border mt-1"required/></div>}<div><Label>Email</Label><Input type="email"value={email}onChange={e=>setEmail(e.target.value)}className="bg-secondary border-border mt-1"required/></div><div><Label>Password</Label><Input type="password"value={password}onChange={e=>setPassword(e.target.value)}className="bg-secondary border-border mt-1"required/></div>{errorMsg&&<p className="text-red-500 text-sm bg-red-500/10 p-2 rounded">{errorMsg}</p>}<Button type="submit"disabled={loading}className="w-full bg-primary text-primary-foreground">{loading&&<Loader2 className="w-4 h-4 animate-spin mr-2"/>}{isSignUp?"Sign Up":"Sign In"}</Button><p className="text-center text-sm text-muted-foreground"><button type="button"onClick={()=>setIsSignUp(!isSignUp)}className="text-primary hover:underline">{isSignUp?"Sign In instead":"Sign Up instead"}</button></p></form></div></div>);}
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
+
+export default function Login() {
+  const nav = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [statusMsg, setStatusMsg] = useState("");
+
+  useEffect(() => {
+    if (isAuthenticated) nav("/Dashboard", { replace: true });
+  }, [isAuthenticated, nav]);
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg("");
+    setStatusMsg("Connecting to server...");
+
+    const timeout = setTimeout(() => {
+      setLoading(false);
+      setStatusMsg("");
+      setErrorMsg("Connection is slow. Please try again — the server may be warming up.");
+    }, 30000);
+
+    try {
+      if (isSignUp) {
+        setStatusMsg("Creating your account...");
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: fullName } },
+        });
+        clearTimeout(timeout);
+        if (error) throw error;
+        toast.success("Account created!");
+        if (!data?.session) setIsSignUp(false);
+      } else {
+        setStatusMsg("Signing you in...");
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        clearTimeout(timeout);
+        if (error) throw error;
+        toast.success("Signed in!");
+      }
+    } catch (err) {
+      clearTimeout(timeout);
+      setErrorMsg(err.message);
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+      setStatusMsg("");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="font-orbitron text-3xl font-bold text-foreground">
+            GMAIL<span className="text-primary">PAY</span>
+          </h1>
+        </div>
+        <form
+          onSubmit={handleAuth}
+          className="bg-card border border-border rounded-xl p-6 space-y-4"
+        >
+          {isSignUp && (
+            <div>
+              <Label>Full Name</Label>
+              <Input
+                placeholder="Name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="bg-secondary border-border mt-1"
+                required
+              />
+            </div>
+          )}
+          <div>
+            <Label>Email</Label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-secondary border-border mt-1"
+              required
+            />
+          </div>
+          <div>
+            <Label>Password</Label>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="bg-secondary border-border mt-1"
+              required
+            />
+          </div>
+          {errorMsg && (
+            <p className="text-red-500 text-sm bg-red-500/10 p-2 rounded">
+              {errorMsg}
+            </p>
+          )}
+          {statusMsg && loading && (
+            <p className="text-primary text-sm bg-primary/10 p-2 rounded text-center">
+              {statusMsg}
+            </p>
+          )}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-primary text-primary-foreground"
+          >
+            {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+            {isSignUp ? "Sign Up" : "Sign In"}
+          </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-primary hover:underline"
+            >
+              {isSignUp ? "Sign In instead" : "Sign Up instead"}
+            </button>
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+}
