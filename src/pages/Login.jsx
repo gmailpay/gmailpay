@@ -32,28 +32,48 @@ export default function Login() {
 
     try {
       if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
-          email, password,
-          options: { data: { full_name: fullName } },
+        // Use server-side proxy for signup
+        const resp = await fetch("/api/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, full_name: fullName })
         });
-        if (error) throw error;
-        toast.success("Account created!");
-        if (!data?.session) {
+        const data = await resp.json();
+        
+        if (!resp.ok) throw new Error(data.msg || data.error || "Sign up failed");
+        
+        if (data.access_token) {
+          // Auto-set session in Supabase client
+          await supabase.auth.setSession({
+            access_token: data.access_token,
+            refresh_token: data.refresh_token
+          });
+          toast.success("Account created!");
+        } else {
+          toast.success("Account created! Please sign in.");
           setIsSignUp(false);
-          toast.info("Now sign in with your new account.");
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        // Use server-side proxy for login
+        const resp = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await resp.json();
+        
+        if (!resp.ok) throw new Error(data.msg || data.error || "Sign in failed");
+        
+        // Set session in Supabase client
+        await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token
+        });
         toast.success("Signed in!");
       }
     } catch (err) {
       const msg = err?.message || "Something went wrong";
-      if (msg.includes("fetch") || msg.includes("network") || msg.includes("Failed")) {
-        setErrorMsg("Network error — check your internet connection and try again.");
-      } else {
-        setErrorMsg(msg);
-      }
+      setErrorMsg(msg);
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -84,12 +104,8 @@ export default function Login() {
             <Label>Password</Label>
             <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-secondary border-border mt-1" required />
           </div>
-          {errorMsg && (
-            <p className="text-red-500 text-sm bg-red-500/10 p-2 rounded">{errorMsg}</p>
-          )}
-          {statusMsg && loading && (
-            <p className="text-primary text-sm bg-primary/10 p-2 rounded text-center">{statusMsg}</p>
-          )}
+          {errorMsg && <p className="text-red-500 text-sm bg-red-500/10 p-2 rounded">{errorMsg}</p>}
+          {statusMsg && loading && <p className="text-primary text-sm bg-primary/10 p-2 rounded text-center">{statusMsg}</p>}
           <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground">
             {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
             {isSignUp ? "Sign Up" : "Sign In"}
