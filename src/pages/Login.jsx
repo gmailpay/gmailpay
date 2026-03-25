@@ -32,43 +32,29 @@ export default function Login() {
 
     try {
       if (isSignUp) {
-        // Use server-side proxy for signup
-        const resp = await fetch("/api/signup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, full_name: fullName })
+        // Direct Supabase signup - handles session management automatically
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: fullName || "" } }
         });
-        const data = await resp.json();
-        
-        if (!resp.ok) throw new Error(data.msg || data.error || "Sign up failed");
-        
-        if (data.access_token) {
-          // Auto-set session in Supabase client
-          await supabase.auth.setSession({
-            access_token: data.access_token,
-            refresh_token: data.refresh_token
-          });
+
+        if (error) throw error;
+
+        if (data.session) {
           toast.success("Account created!");
         } else {
           toast.success("Account created! Please sign in.");
           setIsSignUp(false);
         }
       } else {
-        // Use server-side proxy for login
-        const resp = await fetch("/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
+        // Direct Supabase login - handles session management automatically
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
         });
-        const data = await resp.json();
-        
-        if (!resp.ok) throw new Error(data.msg || data.error || "Sign in failed");
-        
-        // Set session in Supabase client
-        await supabase.auth.setSession({
-          access_token: data.access_token,
-          refresh_token: data.refresh_token
-        });
+
+        if (error) throw error;
         toast.success("Signed in!");
       }
     } catch (err) {
