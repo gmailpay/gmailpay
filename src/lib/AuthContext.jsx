@@ -1,5 +1,5 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
+import { account, listDocs, createDoc, Query } from "@/lib/appwrite";
 
 const AuthContext = createContext();
 
@@ -11,23 +11,19 @@ export const AuthProvider = ({ children }) => {
 
   const loadProfile = useCallback(async (authUser) => {
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .single();
-      
+      const profiles = await listDocs("profiles", [Query.equal("user_id", authUser.$id)]);
+      const profile = profiles[0];
       setUser({
-        id: authUser.id,
+        id: authUser.$id,
         email: authUser.email,
-        full_name: profile?.full_name || authUser.user_metadata?.full_name || '',
+        full_name: profile?.full_name || authUser.name || "",
         ...profile
       });
     } catch {
       setUser({
-        id: authUser.id,
+        id: authUser.$id,
         email: authUser.email,
-        full_name: authUser.user_metadata?.full_name || ''
+        full_name: authUser.name || ""
       });
     }
     setIsAuthenticated(true);
@@ -37,55 +33,32 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     let mounted = true;
-
-    const timer = setTimeout(() => {
-      if (mounted && !isAuthenticated) {
-        setIsLoadingAuth(false);
-        setAuthError({ type: 'auth_required', message: 'timeout' });
-      }
-    }, 8000);
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-
-      if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
-        await loadProfile(session.user);
-        clearTimeout(timer);
-      } else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
-        setUser(null);
-        setIsAuthenticated(false);
-        setAuthError({ type: 'auth_required', message: event === 'SIGNED_OUT' ? 'Signed out' : 'No session' });
-        setIsLoadingAuth(false);
-        clearTimeout(timer);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-      clearTimeout(timer);
-    };
+    // Check for existing session via cookie (Appwrite uses cookies, not localStorage)
+    account.get()
+      .then((authUser) => {
+        if (mounted) loadProfile(authUser);
+      })
+      .catch(() => {
+        if (mounted) {
+          setIsLoadingAuth(false);
+          setAuthError({ type: "auth_required", message: "No session" });
+        }
+      });
+    return () => { mounted = false; };
   }, [loadProfile]);
 
   const logout = useCallback(async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      // signOut might fail on slow network, still clear local state
-    }
+    try { await account.deleteSession("current"); } catch {}
     setUser(null);
     setIsAuthenticated(false);
-    setAuthError({ type: 'auth_required', message: 'Signed out' });
+    setAuthError({ type: "auth_required", message: "Signed out" });
   }, []);
 
   return (
     <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      isLoadingAuth,
+      user, isAuthenticated, isLoadingAuth,
       isLoadingPublicSettings: false,
-      authError,
-      logout,
+      authError, logout,
       navigateToLogin: () => {},
       checkAuth: async () => {},
       appPublicSettings: null
@@ -97,6 +70,6 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const c = useContext(AuthContext);
-  if (!c) throw new Error('useAuth must be used within AuthProvider');
+  if (!c) throw new Error("useAuth must be used within AuthProvider");
   return c;
 };
