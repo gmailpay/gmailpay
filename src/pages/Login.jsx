@@ -40,6 +40,9 @@ export default function Login() {
         if (error) throw error;
         if (data.session) {
           toast.success("Account created!");
+          // Full page redirect to force fresh session read
+          setTimeout(() => { window.location.href = "/Dashboard"; }, 500);
+          return;
         } else {
           toast.success("Account created! Please sign in.");
           setIsSignUp(false);
@@ -51,6 +54,9 @@ export default function Login() {
         });
         if (error) throw error;
         toast.success("Signed in!");
+        // Full page redirect to force fresh session read from storage
+        setTimeout(() => { window.location.href = "/Dashboard"; }, 500);
+        return;
       }
     } catch (err) {
       const msg = err?.message || "Something went wrong";
