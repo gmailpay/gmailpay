@@ -1,3 +1,23 @@
-import{useState}from"react";import{supabase}from"@/lib/supabaseClient";import{Dialog,DialogContent,DialogHeader,DialogTitle,DialogFooter}from"@/components/ui/dialog";import{Button}from"@/components/ui/button";import{Input}from"@/components/ui/input";import{Label}from"@/components/ui/label";import{Loader2,Wallet}from"lucide-react";import{toast}from"sonner";
-export default function WithdrawDialog({open,onClose,userEmail,withdrawableAmount,onWithdrawn}){const[bank,setBank]=useState("");const[acct,setAcct]=useState("");const[loading,setLoading]=useState(false);const submit=async()=>{if(!bank.trim()||!acct.trim()){toast.error("Fill all fields.");return;}setLoading(true);const{error}=await supabase.from("withdrawals").insert({user_email:userEmail,amount:withdrawableAmount,bank_name:bank.trim(),bank_account_number:acct.trim(),status:"pending"});if(error)toast.error("Failed.");else{toast.success("Withdrawal submitted!");setBank("");setAcct("");onClose();onWithdrawn?.();}setLoading(false);};
-return<Dialog open={open}onOpenChange={onClose}><DialogContent className="bg-card border-border"><DialogHeader><DialogTitle className="flex items-center gap-2"><Wallet className="w-5 h-5 text-primary"/>Withdraw</DialogTitle></DialogHeader><div className="space-y-4 py-4"><div className="bg-secondary/50 rounded-lg p-3 text-center"><p className="font-orbitron text-2xl font-bold text-primary">\u20A6{withdrawableAmount?.toLocaleString()}</p></div><div><Label>Bank Name</Label><Input placeholder="e.g. Opay"value={bank}onChange={e=>setBank(e.target.value)}className="bg-secondary mt-1"/></div><div><Label>Account Number</Label><Input placeholder="Account #"value={acct}onChange={e=>setAcct(e.target.value)}className="bg-secondary mt-1"/></div></div><DialogFooter><Button variant="outline"onClick={onClose}>Cancel</Button><Button onClick={submit}disabled={loading}className="gold-gradient text-black font-bold">{loading&&<Loader2 className="w-4 h-4 animate-spin mr-2"/>}Confirm</Button></DialogFooter></DialogContent></Dialog>;}
+import { useState } from "react";
+import { createDoc } from "@/lib/appwrite";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, Wallet } from "lucide-react";
+import { toast } from "sonner";
+export default function WithdrawDialog({ open, onClose, userEmail, withdrawableAmount, onWithdrawn }) {
+  const [bank, setBank] = useState("");
+  const [acct, setAcct] = useState("");
+  const [loading, setLoading] = useState(false);
+  const submit = async () => {
+    if (!bank.trim() || !acct.trim()) { toast.error("Fill all fields."); return; }
+    setLoading(true);
+    try {
+      await createDoc("withdrawals", { user_email: userEmail, amount: withdrawableAmount, bank_name: bank.trim(), bank_account_number: acct.trim(), status: "pending" });
+      toast.success("Withdrawal submitted!"); setBank(""); setAcct(""); onClose(); onWithdrawn?.();
+    } catch { toast.error("Failed."); }
+    setLoading(false);
+  };
+  return <Dialog open={open} onOpenChange={onClose}><DialogContent className="bg-card border-border"><DialogHeader><DialogTitle className="flex items-center gap-2"><Wallet className="w-5 h-5 text-primary" />Withdraw</DialogTitle></DialogHeader><div className="space-y-4 py-4"><div className="bg-secondary/50 rounded-lg p-3 text-center"><p className="font-orbitron text-2xl font-bold text-primary">\u20A6{withdrawableAmount?.toLocaleString()}</p></div><div><Label>Bank Name</Label><Input placeholder="e.g. Opay" value={bank} onChange={e => setBank(e.target.value)} className="bg-secondary mt-1" /></div><div><Label>Account Number</Label><Input placeholder="Account #" value={acct} onChange={e => setAcct(e.target.value)} className="bg-secondary mt-1" /></div></div><DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={loading} className="gold-gradient text-black font-bold">{loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Confirm</Button></DialogFooter></DialogContent></Dialog>;
+}
