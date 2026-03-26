@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { account, createDoc, listDocs, Query, ID } from "@/lib/appwrite";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,44 +32,28 @@ export default function Login() {
 
     try {
       if (isSignUp) {
-        // Use server-side proxy for signup
-        const resp = await fetch("/api/signup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, full_name: fullName })
+        // Create account
+        const newUser = await account.create(ID.unique(), email, password, fullName || undefined);
+        // Create session
+        await account.createEmailPasswordSession(email, password);
+        // Create profile document
+        await createDoc("profiles", {
+          user_id: newUser.$id,
+          email: email,
+          full_name: fullName || "",
+          trust_level: "low",
+          is_banned: false,
+          ban_reason: "",
+          warning_count: 0,
+          is_restricted: false
         });
-        const data = await resp.json();
-        
-        if (!resp.ok) throw new Error(data.msg || data.error || "Sign up failed");
-        
-        if (data.access_token) {
-          // Auto-set session in Supabase client
-          await supabase.auth.setSession({
-            access_token: data.access_token,
-            refresh_token: data.refresh_token
-          });
-          toast.success("Account created!");
-        } else {
-          toast.success("Account created! Please sign in.");
-          setIsSignUp(false);
-        }
+        toast.success("Account created!");
+        // Full page reload to pick up new session
+        window.location.href = "/Dashboard";
       } else {
-        // Use server-side proxy for login
-        const resp = await fetch("/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
-        });
-        const data = await resp.json();
-        
-        if (!resp.ok) throw new Error(data.msg || data.error || "Sign in failed");
-        
-        // Set session in Supabase client
-        await supabase.auth.setSession({
-          access_token: data.access_token,
-          refresh_token: data.refresh_token
-        });
+        await account.createEmailPasswordSession(email, password);
         toast.success("Signed in!");
+        window.location.href = "/Dashboard";
       }
     } catch (err) {
       const msg = err?.message || "Something went wrong";
@@ -102,7 +86,7 @@ export default function Login() {
           </div>
           <div>
             <Label>Password</Label>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-secondary border-border mt-1" required />
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-secondary border-border mt-1" required minLength={8} />
           </div>
           {errorMsg && <p className="text-red-500 text-sm bg-red-500/10 p-2 rounded">{errorMsg}</p>}
           {statusMsg && loading && <p className="text-primary text-sm bg-primary/10 p-2 rounded text-center">{statusMsg}</p>}
