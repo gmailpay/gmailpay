@@ -32,31 +32,44 @@ export default function Login() {
 
     try {
       if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { full_name: fullName || "" } }
+        // Use server-side proxy for signup
+        const resp = await fetch("/api/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, full_name: fullName })
         });
-        if (error) throw error;
-        if (data.session) {
+        const data = await resp.json();
+        
+        if (!resp.ok) throw new Error(data.msg || data.error || "Sign up failed");
+        
+        if (data.access_token) {
+          // Auto-set session in Supabase client
+          await supabase.auth.setSession({
+            access_token: data.access_token,
+            refresh_token: data.refresh_token
+          });
           toast.success("Account created!");
-          // Full page redirect to force fresh session read
-          setTimeout(() => { window.location.href = "/Dashboard"; }, 500);
-          return;
         } else {
           toast.success("Account created! Please sign in.");
           setIsSignUp(false);
         }
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password
+        // Use server-side proxy for login
+        const resp = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
         });
-        if (error) throw error;
+        const data = await resp.json();
+        
+        if (!resp.ok) throw new Error(data.msg || data.error || "Sign in failed");
+        
+        // Set session in Supabase client
+        await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token
+        });
         toast.success("Signed in!");
-        // Full page redirect to force fresh session read from storage
-        setTimeout(() => { window.location.href = "/Dashboard"; }, 500);
-        return;
       }
     } catch (err) {
       const msg = err?.message || "Something went wrong";
