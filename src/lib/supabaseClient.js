@@ -8,8 +8,7 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      storageKey: "gmailpay-auth",
-      flowType: "pkce"
+      storageKey: "gmailpay-auth"
     }
   }
 )
