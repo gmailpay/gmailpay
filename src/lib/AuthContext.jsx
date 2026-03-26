@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 const AuthContext = createContext();
@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const initialized = useRef(false);
 
   const loadProfile = useCallback(async (authUser) => {
     try {
@@ -38,27 +39,62 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    const timer = setTimeout(() => {
-      if (mounted && !isAuthenticated) {
-        setIsLoadingAuth(false);
-        setAuthError({ type: 'auth_required', message: 'timeout' });
+    // PRIMARY: Explicitly check stored session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      if (session?.user) {
+        initialized.current = true;
+        loadProfile(session.user);
+      } else if (!initialized.current) {
+        // No stored session - wait briefly for onAuthStateChange before giving up
+        setTimeout(() => {
+          if (mounted && !initialized.current) {
+            initialized.current = true;
+            setIsLoadingAuth(false);
+            setAuthError({ type: 'auth_required', message: 'No session' });
+          }
+        }, 2000);
       }
-    }, 8000);
+    });
 
+    // SECONDARY: Listen for real-time auth events (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
-      if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
+      if (event === 'INITIAL_SESSION') {
+        // Only handle if getSession() hasn't already initialized
+        if (!initialized.current) {
+          initialized.current = true;
+          if (session?.user) {
+            await loadProfile(session.user);
+          } else {
+            setIsLoadingAuth(false);
+            setAuthError({ type: 'auth_required', message: 'No session' });
+          }
+        }
+        return;
+      }
+
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        initialized.current = true;
         await loadProfile(session.user);
-        clearTimeout(timer);
-      } else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
+      } else if (event === 'SIGNED_OUT') {
+        initialized.current = true;
         setUser(null);
         setIsAuthenticated(false);
-        setAuthError({ type: 'auth_required', message: event === 'SIGNED_OUT' ? 'Signed out' : 'No session' });
+        setAuthError({ type: 'auth_required', message: 'Signed out' });
         setIsLoadingAuth(false);
-        clearTimeout(timer);
       }
     });
+
+    // Fallback timeout - if nothing resolves in 10s, show login
+    const timer = setTimeout(() => {
+      if (mounted && !initialized.current) {
+        initialized.current = true;
+        setIsLoadingAuth(false);
+        setAuthError({ type: 'auth_required', message: 'timeout' });
+      }
+    }, 10000);
 
     return () => {
       mounted = false;
