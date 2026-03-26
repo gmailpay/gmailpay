@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { listDocs, createDoc, databases, DB_ID, Query } from "@/lib/appwrite";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,15 +17,18 @@ export default function SubmitMailsCard({ userEmail, onSubmitted, submissionsOpe
   const [mails, setMails] = useState("");
   const [busy, setBusy] = useState(false);
   const qc = useQueryClient();
-
   const trustLevel = profile?.trust_level || "low";
   const isBanned = profile?.is_banned;
   const isRestricted = profile?.is_restricted;
   const dailyLimit = TRUST_LIMITS[trustLevel] || 20;
 
-  const { data: reserved = [] } = useQuery({ queryKey: ["reserved", userEmail], queryFn: async () => { const { data } = await supabase.from("reserved_usernames").select("*").eq("user_email", userEmail); return data || []; }, enabled: !!userEmail });
-  const { data: subs = [] } = useQuery({ queryKey: ["subs-card", userEmail], queryFn: async () => { const { data } = await supabase.from("gmail_submissions").select("*").eq("submitted_by", userEmail).order("created_at", { ascending: false }); return data || []; }, enabled: !!userEmail });
-  const { data: todaySubmitCount = 0 } = useQuery({ queryKey: ["today-subs", userEmail], queryFn: async () => { const today = new Date(); today.setHours(0,0,0,0); const { count } = await supabase.from("gmail_submissions").select("*", { count: "exact", head: true }).eq("submitted_by", userEmail).gte("created_at", today.toISOString()); return count || 0; }, enabled: !!userEmail });
+  const { data: reserved = [] } = useQuery({ queryKey: ["reserved", userEmail], queryFn: () => listDocs("reserved_usernames", [Query.equal("user_email", userEmail)]), enabled: !!userEmail });
+  const { data: subs = [] } = useQuery({ queryKey: ["subs-card", userEmail], queryFn: () => listDocs("gmail_submissions", [Query.equal("submitted_by", userEmail), Query.orderDesc("$createdAt"), Query.limit(500)]), enabled: !!userEmail });
+  const { data: todaySubmitCount = 0 } = useQuery({ queryKey: ["today-subs", userEmail], queryFn: async () => {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const r = await databases.listDocuments(DB_ID, "gmail_submissions", [Query.equal("submitted_by", userEmail), Query.greaterThanEqual("$createdAt", today.toISOString()), Query.limit(1)]);
+    return r.total;
+  }, enabled: !!userEmail });
 
   const totalSubs = subs.length;
   const rejectedCount = subs.filter(s => s.status === "rejected").length;
@@ -36,94 +39,43 @@ export default function SubmitMailsCard({ userEmail, onSubmitted, submissionsOpe
     if (!submissionsOpen) { toast.error("Submissions closed."); return; }
     if (isBanned) { toast.error("Account banned."); return; }
     if (isRestricted) { toast.error("Account restricted due to high rejection rate."); return; }
-    const lines = mails.split("\n").map(l => l.trim().toLowerCase()).filter(Boolean);
-    if (!lines.length) { toast.error("Paste emails."); return; }
-    if (!reserved.length) { toast.error("Generate usernames first."); return; }
-    if (remaining <= 0) { toast.error(`Daily limit (${dailyLimit}) reached.`); return; }
-
-    const valid = new Set(reserved.map(r => r.gmail_address.toLowerCase()));
-    const already = new Set(subs.map(s => s.email_address.toLowerCase()));
-    const errs = [], ok = [];
-    for (const e of lines) {
-      if (!valid.has(e)) errs.push(e + " — not your generated username");
-      else if (already.has(e)) errs.push(e + " — already submitted");
-      else ok.push(e);
-    }
-    const uniq = [...new Set(ok)].slice(0, remaining);
-    if (errs.length) { toast.error(errs[0]); return; }
-    if (!uniq.length) { toast.error("No valid new emails."); return; }
-
+    const lines = mails.split("\n").map(l => l.trim().toLowerCase()).filter(l => l && l.includes("@"));
+    if (lines.length === 0) { toast.error("Enter valid emails."); return; }
+    if (lines.length > remaining) { toast.error(`Daily limit: ${remaining} left.`); return; }
+    const reservedSet = new Set(reserved.map(r => r.gmail_address.toLowerCase()));
+    const existingEmails = new Set(subs.map(s => s.email_address.toLowerCase()));
+    const valid = lines.filter(l => !existingEmails.has(l) && !reservedSet.has(l));
+    if (valid.length === 0) { toast.error("All emails already submitted or reserved."); return; }
     setBusy(true);
-    const { error } = await supabase.from("gmail_submissions").insert(uniq.map(e => ({ email_address: e, submitted_by: userEmail, status: "pending" })));
-    if (error?.code === "23505") { toast.error("One or more emails already submitted by another user."); }
-    else if (error) { toast.error("Submission failed: " + error.message); }
-    else { toast.success(`${uniq.length} submitted!`); setMails(""); }
+    try {
+      for (const email of valid) {
+        await createDoc("gmail_submissions", { email_address: email, submitted_by: userEmail, status: "pending", rejection_reason: "" });
+      }
+      toast.success(`${valid.length} submitted!`);
+      setMails("");
+      qc.invalidateQueries({ queryKey: ["subs-card", userEmail] });
+      qc.invalidateQueries({ queryKey: ["today-subs", userEmail] });
+      onSubmitted?.();
+    } catch (err) { toast.error(err?.message || "Failed."); }
     setBusy(false);
-    qc.invalidateQueries({ queryKey: ["subs-card", userEmail] });
-    qc.invalidateQueries({ queryKey: ["today-subs", userEmail] });
-    qc.invalidateQueries({ queryKey: ["my-submissions"] });
-    onSubmitted?.();
   };
 
-  if (isBanned) return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
-      <XCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-      <h3 className="font-bold text-red-400 mb-1">Account Banned</h3>
-      <p className="text-sm text-red-300">{profile?.ban_reason || "Your account has been permanently banned due to excessive rejections."}</p>
-    </motion.div>
-  );
-
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-card border border-border rounded-xl p-5 md:p-6">
-      <div className="silver-gradient rounded-lg py-2 px-4 mb-4 flex items-center justify-between">
-        <h3 className="font-orbitron text-sm font-bold text-black uppercase">Submit Mails</h3>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-card border border-border rounded-xl p-5 md:p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2"><Mail className="w-5 h-5 text-primary" /><h3 className="font-orbitron text-sm font-bold uppercase">Submit Gmails</h3></div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className={`${TRUST_COLORS[trustLevel]} border text-xs`}>
-            <Shield className="w-3 h-3 mr-1" />{trustLevel.toUpperCase()}
-          </Badge>
+          <Badge variant="outline" className={`${TRUST_COLORS[trustLevel]} border text-xs`}><Shield className="w-3 h-3 mr-1" />{trustLevel}</Badge>
+          {isBanned && <Badge className="bg-red-500/20 text-red-400 border-red-500/30 border text-xs">Banned</Badge>}
+          {isRestricted && <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 border text-xs"><AlertTriangle className="w-3 h-3 mr-1" />Restricted</Badge>}
         </div>
       </div>
-
-      {isRestricted && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4 text-center">
-          <p className="text-red-400 text-sm flex items-center justify-center gap-1"><AlertTriangle className="w-4 h-4" /> Account restricted — high rejection rate ({rejectionRate}%)</p>
-        </div>
-      )}
-      {rejectionRate >= 30 && rejectionRate < 50 && !isRestricted && (
-        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4 text-center">
-          <p className="text-yellow-400 text-sm flex items-center justify-center gap-1"><AlertTriangle className="w-4 h-4" /> Warning: {rejectionRate}% rejection rate. Above 50% = restrictions.</p>
-        </div>
-      )}
-      {!submissionsOpen && <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4 text-center"><p className="text-red-400 text-sm">Submissions closed</p></div>}
-
-      <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
-        <span>Today: {todaySubmitCount}/{dailyLimit}</span>
-        <span>{remaining} remaining</span>
-      </div>
-
-      <Textarea placeholder="Paste Gmails (one per line)" value={mails} onChange={e => setMails(e.target.value)} className="bg-secondary border-border min-h-[120px] text-sm mb-4" disabled={!submissionsOpen || !reserved.length || remaining <= 0 || isRestricted} />
-      <Button onClick={submit} disabled={busy || !submissionsOpen || !reserved.length || remaining <= 0 || isRestricted} className="w-full bg-primary text-primary-foreground font-semibold mb-6">
-        {busy ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-        {busy ? "Submitting..." : remaining <= 0 ? "Daily Limit Reached" : "Submit"}
+      {rejectionRate > 40 && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4 text-xs text-red-400 flex items-center gap-2"><AlertTriangle className="w-4 h-4" />High rejection rate ({rejectionRate}%). Submit carefully.</div>}
+      <p className="text-xs text-muted-foreground mb-3">One email per line. {remaining}/{dailyLimit} remaining today.</p>
+      <Textarea placeholder={"example1@gmail.com\nexample2@gmail.com"} value={mails} onChange={(e) => setMails(e.target.value)} className="bg-secondary border-border min-h-[100px] text-sm mb-3" disabled={!submissionsOpen || isBanned || isRestricted || remaining <= 0} />
+      <Button onClick={submit} disabled={busy || !submissionsOpen || isBanned || isRestricted || remaining <= 0} className="w-full bg-primary text-primary-foreground font-semibold">
+        {busy ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}{busy ? "Submitting..." : "Submit"}
       </Button>
-
-      {subs.length > 0 ? (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase">Submissions</p>
-            <Link to="/Submissions" className="text-xs text-primary hover:underline">View all</Link>
-          </div>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {subs.slice(0, 20).map(s => { const cfg = sc[s.status] || sc.pending; const I = cfg.i; return (
-              <div key={s.id} className="flex items-center justify-between gap-3 bg-secondary/50 rounded-lg px-3 py-2">
-                <div className="flex items-center gap-2 min-w-0"><I className={`w-4 h-4 ${s.status === "approved" ? "text-green-400" : s.status === "rejected" ? "text-red-400" : "text-yellow-400"}`} /><span className="text-xs font-mono truncate">{s.email_address}</span></div>
-                <Badge variant="outline" className={`${cfg.c} border text-xs`}>{cfg.l}</Badge>
-              </div>); })}
-          </div>
-        </div>
-      ) : (
-        <div className="text-center py-6 text-muted-foreground"><Mail className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-xs">No submissions</p></div>
-      )}
     </motion.div>
   );
 }
