@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { account, listDocs, createDoc, Query } from "@/lib/appwrite";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Wallet } from "lucide-react";
@@ -18,23 +18,25 @@ export default function Dashboard() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user: au } } = await supabase.auth.getUser();
-      if (!au) return;
-      const { data: p } = await supabase.from("profiles").select("*").eq("id", au.id).single();
-      const u = { id: au.id, email: au.email, full_name: p?.full_name || "" };
-      setUser(u);
-      setProfile(p);
-      const ref = new URLSearchParams(window.location.search).get("ref");
-      if (ref && ref !== u.email) {
-        const { data: ex } = await supabase.from("referrals").select("*").eq("referred_email", u.email);
-        if (!ex || ex.length === 0) await supabase.from("referrals").insert({ referrer_email: ref, referred_email: u.email, referral_bonus_paid: false, power_bonus_paid: false });
-      }
+      try {
+        const au = await account.get();
+        const profiles = await listDocs("profiles", [Query.equal("user_id", au.$id)]);
+        const p = profiles[0] || null;
+        const u = { id: au.$id, email: au.email, full_name: p?.full_name || "" };
+        setUser(u);
+        setProfile(p);
+        const ref = new URLSearchParams(window.location.search).get("ref");
+        if (ref && ref !== u.email) {
+          const ex = await listDocs("referrals", [Query.equal("referred_email", u.email)]);
+          if (!ex || ex.length === 0) await createDoc("referrals", { referrer_email: ref, referred_email: u.email, referral_bonus_paid: false, power_bonus_paid: false });
+        }
+      } catch {}
     })();
   }, []);
 
-  const { data: subs = [] } = useQuery({ queryKey: ["my-submissions"], queryFn: async () => { const { data } = await supabase.from("gmail_submissions").select("*").eq("submitted_by", user.email); return data || []; }, enabled: !!user });
-  const { data: wds = [] } = useQuery({ queryKey: ["my-withdrawals"], queryFn: async () => { const { data } = await supabase.from("withdrawals").select("*").eq("user_email", user.email); return data || []; }, enabled: !!user });
-  const { data: settings = [] } = useQuery({ queryKey: ["app-settings"], queryFn: async () => { const { data } = await supabase.from("app_settings").select("*").eq("setting_key", "main"); return data || []; } });
+  const { data: subs = [] } = useQuery({ queryKey: ["my-submissions"], queryFn: () => listDocs("gmail_submissions", [Query.equal("submitted_by", user.email), Query.limit(500)]), enabled: !!user });
+  const { data: wds = [] } = useQuery({ queryKey: ["my-withdrawals"], queryFn: () => listDocs("withdrawals", [Query.equal("user_email", user.email), Query.limit(500)]), enabled: !!user });
+  const { data: settings = [] } = useQuery({ queryKey: ["app-settings"], queryFn: () => listDocs("app_settings", [Query.equal("setting_key", "main")]) });
 
   const so = settings.length > 0 ? settings[0].submissions_open : true;
   const pc = subs.filter(s => s.status === "pending").length, ac = subs.filter(s => s.status === "approved").length;
