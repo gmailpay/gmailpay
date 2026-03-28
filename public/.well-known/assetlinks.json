@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.gmailpay.twa",
+        "sha256_cert_fingerprints": ["94:18:FF:98:8F:B5:69:19:4C:AE:B9:8D:CA:63:00:43:6B:A2:F8:4F:AE:4F:0B:35:DE:11:AA:1A:22:26:7B:84"]
+      }
+    }]
