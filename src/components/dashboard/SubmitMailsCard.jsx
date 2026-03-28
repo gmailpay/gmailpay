@@ -42,10 +42,9 @@ export default function SubmitMailsCard({ userEmail, onSubmitted, submissionsOpe
     const lines = mails.split("\n").map(l => l.trim().toLowerCase()).filter(l => l && l.includes("@"));
     if (lines.length === 0) { toast.error("Enter valid emails."); return; }
     if (lines.length > remaining) { toast.error(`Daily limit: ${remaining} left.`); return; }
-    const reservedSet = new Set(reserved.map(r => r.gmail_address.toLowerCase()));
     const existingEmails = new Set(subs.map(s => s.email_address.toLowerCase()));
-    const valid = lines.filter(l => !existingEmails.has(l) && !reservedSet.has(l));
-    if (valid.length === 0) { toast.error("All emails already submitted or reserved."); return; }
+    const valid = lines.filter(l => !existingEmails.has(l));
+    if (valid.length === 0) { toast.error("All emails already submitted."); return; }
     setBusy(true);
     try {
       for (const email of valid) {
