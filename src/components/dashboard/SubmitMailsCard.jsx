@@ -75,6 +75,28 @@ export default function SubmitMailsCard({ userEmail, onSubmitted, submissionsOpe
       <Button onClick={submit} disabled={busy || !submissionsOpen || isBanned || isRestricted || remaining <= 0} className="w-full bg-primary text-primary-foreground font-semibold">
         {busy ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}{busy ? "Submitting..." : "Submit"}
       </Button>
+      {subs.length > 0 && (
+        <div className="mt-4 border-t border-border pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Submissions</p>
+            <Link to="/Submissions" className="text-xs text-primary hover:underline">View All</Link>
+          </div>
+          <div className="space-y-2 max-h-[200px] overflow-y-auto">
+            {subs.slice(0, 10).map((s, i) => {
+              const st = sc[s.status] || sc.pending;
+              const Icon = st.i;
+              return (
+                <div key={s.$id || i} className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2">
+                  <span className="text-xs text-foreground truncate flex-1 mr-2">{s.email_address}</span>
+                  <Badge variant="outline" className={`${st.c} border text-[10px] shrink-0`}>
+                    <Icon className="w-3 h-3 mr-1" />{st.l}
+                  </Badge>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
