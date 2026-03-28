@@ -32,6 +32,8 @@ RULES:
 
 CRITICAL: Users do NOT need to log into the Gmail accounts after creating them. They just CREATE the new Gmail in the Gmail app using the username + password iffyboi77, then come back to GmailPay and SUBMIT the username. Nothing else.
 
+APP DOWNLOAD: Users can download the GmailPay Android app from the download banner on the Dashboard or at this link: https://github.com/gmailpay/gmailpay/releases/download/v1.0.0/app-release.apk
+
 Be helpful, friendly, encouraging. Keep answers short and simple. No markdown. If asked something unrelated, politely redirect.`;
 
 export default function GPayBot() {
