@@ -11,6 +11,7 @@ const Submissions = lazy(() => import("./pages/Submissions"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Admin1 = lazy(() => import("./pages/Admin1"));
+const Buyer = lazy(() => import("./pages/Buyer"));
 const Login = lazy(() => import("./pages/Login"));
 const PageNotFound = lazy(() => import("./lib/PageNotFound"));
 const UserNotRegisteredError = lazy(() => import("@/components/UserNotRegisteredError"));
@@ -52,6 +53,7 @@ const AuthenticatedApp = () => {
         </Route>
         <Route path="/Admin" element={<Admin />} />
         <Route path="/Admin1" element={<Admin1 />} />
+        <Route path="/Buyer" element={<Buyer />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </Suspense>

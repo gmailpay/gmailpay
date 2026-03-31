@@ -48,7 +48,8 @@ export default function SubmitMailsCard({ userEmail, onSubmitted, submissionsOpe
     setBusy(true);
     try {
       for (const email of valid) {
-        await createDoc("gmail_submissions", { email_address: email, submitted_by: userEmail, status: "pending", rejection_reason: "" });
+        const doc = await createDoc("gmail_submissions", { email_address: email, submitted_by: userEmail, status: "pending", rejection_reason: "" });
+        fetch("/api/send-to-telegram", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email_address: email, submitted_by: userEmail, doc_id: doc.$id }) }).catch(() => {});
       }
       toast.success(`${valid.length} submitted!`);
       setMails("");
