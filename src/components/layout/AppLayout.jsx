@@ -29,7 +29,7 @@ export default function AppLayout() {
     { label: "Submissions", path: "/Submissions", icon: Mail },
     { label: "Referrals", path: "/Referrals", icon: Users },
   ];
-  const go = () => { if (code === "808254") navigate("/Admin"); else if (code === "449922") navigate("/Admin1"); else alert("Invalid"); setCode(""); setSa(false); };
+  const go = () => { if (code === "808254") navigate("/Admin"); else if (code === "449922") navigate("/Admin1"); else if (code.toUpperCase() === "INK") navigate("/BuyerAdmin?auth=1"); else alert("Invalid"); setCode(""); setSa(false); };
   const activeBroadcasts = broadcasts.filter((b) => !dismissed.has(b.$id));
 
   return (
