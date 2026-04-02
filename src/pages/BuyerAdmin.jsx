@@ -11,6 +11,9 @@ import { CheckCircle, XCircle, Loader2, ArrowLeft, Shield, Lock, Users, Mail, Ba
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Link, useSearchParams } from "react-router-dom";
+import AdminBroadcasts from "../components/admin/AdminBroadcasts";
+import AdminTrustManager from "../components/admin/AdminTrustManager";
+import AdminMasterSwitch from "../components/admin/AdminMasterSwitch";
 
 const ACCESS_CODE = "INK";
 
@@ -343,12 +346,18 @@ export default function BuyerAdmin() {
       <Tabs defaultValue="submissions">
         <TabsList className="bg-secondary mb-6 w-full justify-start flex-wrap">
           <TabsTrigger value="submissions">Submissions</TabsTrigger>
+          <TabsTrigger value="trust">Trust & Bans</TabsTrigger>
           <TabsTrigger value="users">Sellers</TabsTrigger>
+          <TabsTrigger value="broadcasts">Broadcasts</TabsTrigger>
           <TabsTrigger value="stats">Stats</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         <TabsContent value="submissions"><BuyerSubmissions /></TabsContent>
+        <TabsContent value="trust"><AdminTrustManager /></TabsContent>
         <TabsContent value="users"><BuyerUsers /></TabsContent>
+        <TabsContent value="broadcasts"><AdminBroadcasts /></TabsContent>
         <TabsContent value="stats"><BuyerStats /></TabsContent>
+        <TabsContent value="settings"><AdminMasterSwitch /></TabsContent>
       </Tabs>
     </div>
   );
