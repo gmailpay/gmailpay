@@ -100,6 +100,33 @@ function BuyerSubmissions() {
         </div>
       </div>
 
+
+      {/* Copy All Emails */}
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs"
+          onClick={() => {
+            const emails = filtered.map(s => s.email_address).join("\n");
+            navigator.clipboard.writeText(emails).then(() => toast.success(`${filtered.length} emails copied!`)).catch(() => toast.error("Copy failed"));
+          }}
+        >
+          <Mail className="w-3 h-3 mr-1" /> Copy All ({filtered.length})
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs"
+          onClick={() => {
+            const approvedEmails = subs.filter(s => s.status === "approved").map(s => s.email_address).join("\n");
+            navigator.clipboard.writeText(approvedEmails).then(() => toast.success(`${subs.filter(s => s.status === "approved").length} approved emails copied!`)).catch(() => toast.error("Copy failed"));
+          }}
+        >
+          <CheckCircle className="w-3 h-3 mr-1" /> Copy Approved
+        </Button>
+      </div>
+
       {/* View toggle + filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <Input placeholder="Search emails..." value={search} onChange={e => setSearch(e.target.value)} className="bg-secondary flex-1" />
