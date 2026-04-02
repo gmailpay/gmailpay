@@ -38,17 +38,90 @@ export default async function handler(req, res) {
       });
     }
 
-    // Send welcome message
+    // Send welcome message with permanent keyboard
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `Welcome to GmailPay, ${firstName}! \u{1f44b}\n\nYou are now registered to receive Gmail submission notifications.\n\nWhen users submit Gmail accounts, you will see them here with Accept/Reject buttons.`,
-        parse_mode: "HTML"
+        text: `Welcome to GmailPay, ${firstName}! \u{1f44b}\n\nYou are now registered to receive Gmail submission notifications.\n\nWhen users submit Gmail accounts, you will see them here with Accept/Reject buttons.\n\nUse the buttons below for quick actions:`,
+        parse_mode: "HTML",
+        reply_markup: {
+          keyboard: [
+            [{ text: "\ud83d\udccb Copy All Approved Mails" }],
+            [{ text: "\ud83d\udcca Stats" }, { text: "\u23f3 Pending Count" }]
+          ],
+          resize_keyboard: true,
+          is_persistent: true
+        }
       })
     });
 
+    return res.status(200).json({ ok: true });
+  }
+
+
+  // ── HANDLE PERMANENT KEYBOARD BUTTONS ──
+  if (msg?.text === "\ud83d\udccb Copy All Approved Mails") {
+    const chatId = String(msg.chat.id);
+    try {
+      const appQ = [
+        JSON.stringify({ method: "equal", attribute: "status", values: ["approved"] }),
+        JSON.stringify({ method: "limit", values: [500] }),
+      ];
+      const appQS = appQ.map(q => `queries[]=${encodeURIComponent(q)}`).join("&");
+      const appResp = await fetch(`${ENDPOINT}/databases/${DB}/collections/${COL}/documents?${appQS}`, { headers: awReadHeaders });
+      if (appResp.ok) {
+        const appData = await appResp.json();
+        const emails = (appData.documents || []).map(d => d.email_address).join("\n");
+        const count = appData.documents?.length || 0;
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, text: count > 0 ? `\ud83d\udccb <b>${count} Approved Emails:</b>\n\n<code>${emails}</code>\n\n(Tap to copy)` : "No approved emails yet.", parse_mode: "HTML" })
+        });
+      }
+    } catch (err) { console.error("Copy mails error:", err); }
+    return res.status(200).json({ ok: true });
+  }
+
+  if (msg?.text === "\ud83d\udcca Stats") {
+    const chatId = String(msg.chat.id);
+    try {
+      const allQ = [JSON.stringify({ method: "limit", values: [1] })];
+      const allQS = allQ.map(q => `queries[]=${encodeURIComponent(q)}`).join("&");
+      const allResp = await fetch(`${ENDPOINT}/databases/${DB}/collections/${COL}/documents?${allQS}`, { headers: awReadHeaders });
+      const total = allResp.ok ? (await allResp.json()).total : 0;
+      
+      const pQ = [JSON.stringify({ method: "equal", attribute: "status", values: ["pending"] }), JSON.stringify({ method: "limit", values: [1] })];
+      const pQS = pQ.map(q => `queries[]=${encodeURIComponent(q)}`).join("&");
+      const pResp = await fetch(`${ENDPOINT}/databases/${DB}/collections/${COL}/documents?${pQS}`, { headers: awReadHeaders });
+      const pending = pResp.ok ? (await pResp.json()).total : 0;
+      
+      const aQ = [JSON.stringify({ method: "equal", attribute: "status", values: ["approved"] }), JSON.stringify({ method: "limit", values: [1] })];
+      const aQS = aQ.map(q => `queries[]=${encodeURIComponent(q)}`).join("&");
+      const aResp = await fetch(`${ENDPOINT}/databases/${DB}/collections/${COL}/documents?${aQS}`, { headers: awReadHeaders });
+      const approved = aResp.ok ? (await aResp.json()).total : 0;
+      
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: `\ud83d\udcca <b>GmailPay Stats</b>\n\n\ud83d\udce8 Total: ${total}\n\u23f3 Pending: ${pending}\n\u2705 Approved: ${approved}\n\u274c Rejected: ${total - pending - approved}\n\n\ud83d\udcb0 Amount: \u20A6${(approved * 300).toLocaleString()}`, parse_mode: "HTML" })
+      });
+    } catch (err) { console.error("Stats error:", err); }
+    return res.status(200).json({ ok: true });
+  }
+
+  if (msg?.text === "\u23f3 Pending Count") {
+    const chatId = String(msg.chat.id);
+    try {
+      const pQ = [JSON.stringify({ method: "equal", attribute: "status", values: ["pending"] }), JSON.stringify({ method: "limit", values: [1] })];
+      const pQS = pQ.map(q => `queries[]=${encodeURIComponent(q)}`).join("&");
+      const pResp = await fetch(`${ENDPOINT}/databases/${DB}/collections/${COL}/documents?${pQS}`, { headers: awReadHeaders });
+      const pending = pResp.ok ? (await pResp.json()).total : 0;
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: `\u23f3 <b>${pending} pending submissions</b>`, parse_mode: "HTML" })
+      });
+    } catch (err) { console.error("Pending count error:", err); }
     return res.status(200).json({ ok: true });
   }
 
