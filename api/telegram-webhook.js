@@ -48,7 +48,7 @@ export default async function handler(req, res) {
         parse_mode: "HTML",
         reply_markup: {
           keyboard: [
-            [{ text: "\ud83d\udccb Copy All Approved Mails" }],
+            [{ text: "\ud83d\udccb Copy All Pending Mails" }],
             [{ text: "\ud83d\udcca Stats" }, { text: "\u23f3 Pending Count" }]
           ],
           resize_keyboard: true,
@@ -62,11 +62,11 @@ export default async function handler(req, res) {
 
 
   // ── HANDLE PERMANENT KEYBOARD BUTTONS ──
-  if (msg?.text === "\ud83d\udccb Copy All Approved Mails") {
+  if (msg?.text === "\ud83d\udccb Copy All Pending Mails") {
     const chatId = String(msg.chat.id);
     try {
       const appQ = [
-        JSON.stringify({ method: "equal", attribute: "status", values: ["approved"] }),
+        JSON.stringify({ method: "equal", attribute: "status", values: ["pending"] }),
         JSON.stringify({ method: "limit", values: [500] }),
       ];
       const appQS = appQ.map(q => `queries[]=${encodeURIComponent(q)}`).join("&");
@@ -77,7 +77,7 @@ export default async function handler(req, res) {
         const count = appData.documents?.length || 0;
         await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: chatId, text: count > 0 ? `\ud83d\udccb <b>${count} Approved Emails:</b>\n\n<code>${emails}</code>\n\n(Tap to copy)` : "No approved emails yet.", parse_mode: "HTML" })
+          body: JSON.stringify({ chat_id: chatId, text: count > 0 ? `\ud83d\udccb <b>${count} Pending Emails:</b>\n\n<code>${emails}</code>\n\n(Tap to copy)` : "No pending emails yet.", parse_mode: "HTML" })
         });
       }
     } catch (err) { console.error("Copy mails error:", err); }
