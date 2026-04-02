@@ -45,6 +45,25 @@ export default function SubmitMailsCard({ userEmail, onSubmitted, submissionsOpe
     const existingEmails = new Set(subs.map(s => s.email_address.toLowerCase()));
     const valid = lines.filter(l => !existingEmails.has(l));
     if (valid.length === 0) { toast.error("All emails already submitted."); return; }
+    // 4-minute cooldown: block emails generated less than 4 minutes ago
+    const now = new Date();
+    const tooSoon = valid.filter(email => {
+      const res = reserved.find(r => r.gmail_address?.toLowerCase() === email);
+      if (res) {
+        const diff = (now - new Date(res.$createdAt)) / (1000 * 60);
+        return diff < 4;
+      }
+      return false;
+    });
+    if (tooSoon.length > 0) {
+      const mins = tooSoon.map(email => {
+        const res = reserved.find(r => r.gmail_address?.toLowerCase() === email);
+        const diff = Math.ceil(4 - (now - new Date(res.$createdAt)) / (1000 * 60));
+        return `${email.split("@")[0]} (${diff}min left)`;
+      });
+      toast.error(`Wait 4 minutes after generating before submitting: ${mins.join(", ")}`);
+      return;
+    }
     setBusy(true);
     try {
       for (const email of valid) {
