@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, XCircle, Loader2, ArrowLeft, Shield, Lock, Users, Mail, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 const ACCESS_CODE = "INK";
 
@@ -96,7 +96,8 @@ function BuyerSubmissions() {
         </div>
         <div className="bg-primary/10 rounded-xl p-3 text-center">
           <p className="text-2xl font-bold font-orbitron text-primary">\u20A6{amountOwed.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">Amount Owed</p>
+          <p className="text-xs text-muted-foreground">Total Owed ({approvedCount} \u00d7 \u20A6300)</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">\u20A6{(approvedCount * 200).toLocaleString()} sellers + \u20A6{(approvedCount * 100).toLocaleString()} admin</p>
         </div>
       </div>
 
@@ -293,8 +294,9 @@ function BuyerStats() {
 }
 
 export default function BuyerAdmin() {
+  const [searchParams] = useSearchParams();
   const [code, setCode] = useState("");
-  const [authenticated, setAuthenticated] = useState(false);
+  const [authenticated, setAuthenticated] = useState(searchParams.get("auth") === "1");
   const [error, setError] = useState("");
 
   const handleLogin = () => {
