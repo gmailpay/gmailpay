@@ -123,11 +123,11 @@ function BuyerSubmissions() {
           size="sm"
           className="text-xs"
           onClick={() => {
-            const approvedEmails = subs.filter(s => s.status === "approved").map(s => s.email_address).join("\n");
-            navigator.clipboard.writeText(approvedEmails).then(() => toast.success(`${subs.filter(s => s.status === "approved").length} approved emails copied!`)).catch(() => toast.error("Copy failed"));
+            const pendingEmails = subs.filter(s => s.status === "pending").map(s => s.email_address).join("\n");
+            navigator.clipboard.writeText(pendingEmails).then(() => toast.success(`${subs.filter(s => s.status === "pending").length} pending emails copied!`)).catch(() => toast.error("Copy failed"));
           }}
         >
-          <CheckCircle className="w-3 h-3 mr-1" /> Copy Approved
+          <Clock className="w-3 h-3 mr-1" /> Copy Pending
         </Button>
       </div>
 
