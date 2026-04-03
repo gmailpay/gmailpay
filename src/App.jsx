@@ -55,6 +55,7 @@ const AuthenticatedApp = () => {
         <Route path="/Admin" element={<Admin />} />
         <Route path="/Admin1" element={<Admin1 />} />
         <Route path="/Buyer" element={<Buyer />} />
+        <Route path="/BuyerAdmin" element={<BuyerAdmin />} />
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>
@@ -70,7 +71,6 @@ function App() {
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/BuyerAdmin" element={<BuyerAdmin />} />
               <Route path="/*" element={<AuthenticatedApp />} />
             </Routes>
           </Suspense>
