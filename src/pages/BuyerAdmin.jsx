@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Loader2, ArrowLeft, Shield, Lock, Users, Mail, BarChart3 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, ArrowLeft, Shield, Lock, Users, Mail, BarChart3, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Link, useSearchParams } from "react-router-dom";
