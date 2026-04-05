@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { invokeGroq } from "@/lib/groq";
+import { invokeOpenRouter } from "@/lib/openrouter";
 import { X, Send, Loader2, Bot } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -56,7 +56,7 @@ export default function GPayBot() {
     setMsgs((p) => [...p, { role: "user", content: m }]);
     setLoading(true);
     try {
-      const r = await invokeGroq(
+      const r = await invokeOpenRouter(
         SYSTEM_PROMPT + "\n\nUser question: " + m
       );
       const clean = r.replace(/\*\*/g, "").replace(/##/g, "").replace(/\*/g, "");
