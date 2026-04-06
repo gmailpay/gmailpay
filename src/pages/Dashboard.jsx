@@ -76,7 +76,7 @@ export default function Dashboard() {
                 <PartyPopper className="w-5 h-5 text-green-400" />
               </div>
               <div>
-                <p className="text-sm md:text-base font-bold text-green-400">Your payment has been made! \u{1F389}</p>
+                <p className="text-sm md:text-base font-bold text-green-400">Your payment has been made! 🎉</p>
                 <p className="text-xs md:text-sm text-green-400/80 mt-0.5">Create more Gmails to earn more</p>
               </div>
             </div>
