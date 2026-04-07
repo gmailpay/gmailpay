@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 
 const TRUST_LIMITS = { low: 20, medium: 30, high: 50 };
 const TRUST_COLORS = { low: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", medium: "bg-blue-500/20 text-blue-400 border-blue-500/30", high: "bg-green-500/20 text-green-400 border-green-500/30" };
-const sc = { pending: { l: "Pending", i: Clock, c: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" }, approved: { l: "Approved", i: CheckCircle, c: "bg-green-500/20 text-green-400 border-green-500/30" }, rejected: { l: "Rejected", i: XCircle, c: "bg-red-500/20 text-red-400 border-red-500/30" } };
+const sc = { pending: { l: "Pending", i: Clock, c: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" }, approved: { l: "Approved", i: CheckCircle, c: "bg-green-500/20 text-green-400 border-green-500/30" }, sub_approved: { l: "Approved", i: CheckCircle, c: "bg-green-500/20 text-green-400 border-green-500/30" }, rejected: { l: "Rejected", i: XCircle, c: "bg-red-500/20 text-red-400 border-red-500/30" } };
 
 export default function SubmitMailsCard({ userEmail, onSubmitted, submissionsOpen, profile }) {
   const [mails, setMails] = useState("");
@@ -69,6 +69,7 @@ export default function SubmitMailsCard({ userEmail, onSubmitted, submissionsOpe
       for (const email of valid) {
         const doc = await createDoc("gmail_submissions", { email_address: email, submitted_by: userEmail, status: "pending", rejection_reason: "" });
         fetch("/api/send-to-telegram", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email_address: email, submitted_by: userEmail, doc_id: doc.$id }) }).catch(() => {});
+        fetch("/api/check-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, doc_id: doc.$id }) }).then(r => r.json()).then(result => { if (result.status === "sub_approved") { toast.success(`${email.split("@")[0]} verified! ✅`); qc.invalidateQueries({ queryKey: ["subs-card", userEmail] }); } else if (result.status === "rejected") { toast.error(`${email.split("@")[0]} rejected`); qc.invalidateQueries({ queryKey: ["subs-card", userEmail] }); } }).catch(() => {});
       }
       toast.success(`${valid.length} submitted!`);
       setMails("");
