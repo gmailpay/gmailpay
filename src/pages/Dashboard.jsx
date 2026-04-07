@@ -27,6 +27,16 @@ export default function Dashboard() {
         const u = { id: au.$id, email: au.email, full_name: p?.full_name || "" };
         setUser(u);
         setProfile(p);
+        // Auto-generate short referral link if missing
+        if (p && !p.referral_short_url && u.email) {
+          fetch("/api/generate-short-link", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: u.email, profile_id: p.$id }),
+          }).then(r => r.json()).then(data => {
+            if (data.short_url) setProfile(prev => ({ ...prev, referral_short_url: data.short_url }));
+          }).catch(() => {});
+        }
         const ref = new URLSearchParams(window.location.search).get("ref");
         if (ref && ref !== u.email) {
           const ex = await listDocs("referrals", [Query.equal("referred_email", u.email)]);
