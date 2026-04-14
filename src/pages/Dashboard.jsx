@@ -93,7 +93,7 @@ export default function Dashboard() {
         {showPaymentBanner && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-2xl px-4 py-3">
             <PartyPopper className="w-5 h-5 text-green-400 shrink-0" />
-            <p className="text-sm text-green-400 flex-1">Payment of <span className="font-bold">\u20A6{recentlyPaid.amount?.toLocaleString()}</span> received!</p>
+            <p className="text-sm text-green-400 flex-1">Payment of <span className="font-bold">₦{recentlyPaid.amount?.toLocaleString()}</span> received!</p>
             <button onClick={() => setDismissedBanner(true)} className="p-1 rounded-lg hover:bg-green-500/10"><X className="w-4 h-4 text-green-400" /></button>
           </motion.div>
         )}
