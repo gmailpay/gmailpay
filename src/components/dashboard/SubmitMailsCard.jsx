@@ -10,8 +10,8 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
 const TRUST_LIMITS = { low: 20, medium: 30, high: 50 };
-const TRUST_COLORS = { low: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", medium: "bg-blue-500/20 text-blue-400 border-blue-500/30", high: "bg-green-500/20 text-green-400 border-green-500/30" };
-const sc = { pending: { l: "Pending", i: Clock, c: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" }, approved: { l: "Approved", i: CheckCircle, c: "bg-green-500/20 text-green-400 border-green-500/30" }, sub_approved: { l: "Approved", i: CheckCircle, c: "bg-green-500/20 text-green-400 border-green-500/30" }, rejected: { l: "Rejected", i: XCircle, c: "bg-red-500/20 text-red-400 border-red-500/30" } };
+const TRUST_COLORS = { low: "bg-yellow-500/15 text-yellow-400 border-yellow-500/25", medium: "bg-blue-500/15 text-blue-400 border-blue-500/25", high: "bg-green-500/15 text-green-400 border-green-500/25" };
+const sc = { pending: { l: "Pending", i: Clock, c: "bg-yellow-500/15 text-yellow-400 border-yellow-500/25" }, approved: { l: "Approved", i: CheckCircle, c: "bg-green-500/15 text-green-400 border-green-500/25" }, sub_approved: { l: "Approved", i: CheckCircle, c: "bg-green-500/15 text-green-400 border-green-500/25" }, rejected: { l: "Rejected", i: XCircle, c: "bg-red-500/15 text-red-400 border-red-500/25" } };
 
 export default function SubmitMailsCard({ userEmail, onSubmitted, submissionsOpen, profile }) {
   const [mails, setMails] = useState("");
@@ -45,73 +45,87 @@ export default function SubmitMailsCard({ userEmail, onSubmitted, submissionsOpe
     const existingEmails = new Set(subs.map(s => s.email_address.toLowerCase()));
     const valid = lines.filter(l => !existingEmails.has(l));
     if (valid.length === 0) { toast.error("All emails already submitted."); return; }
-    // 4-minute cooldown: block emails generated less than 4 minutes ago
     const now = new Date();
     const tooSoon = valid.filter(email => {
       const res = reserved.find(r => r.gmail_address?.toLowerCase() === email);
-      if (res) {
-        const diff = (now - new Date(res.$createdAt)) / (1000 * 60);
-        return diff < 4;
-      }
+      if (res) { const diff = (now - new Date(res.$createdAt)) / (1000 * 60); return diff < 4; }
       return false;
     });
     if (tooSoon.length > 0) {
-      const mins = tooSoon.map(email => {
-        const res = reserved.find(r => r.gmail_address?.toLowerCase() === email);
-        const diff = Math.ceil(4 - (now - new Date(res.$createdAt)) / (1000 * 60));
-        return `${email.split("@")[0]} (${diff}min left)`;
-      });
-      toast.error(`Wait 4 minutes after generating before submitting: ${mins.join(", ")}`);
-      return;
+      const mins = tooSoon.map(email => { const res = reserved.find(r => r.gmail_address?.toLowerCase() === email); const diff = 4 - Math.floor((now - new Date(res.$createdAt)) / (1000 * 60)); return `${email} (${diff}m left)`; });
+      toast.error(`Wait for cooldown: ${mins.join(", ")}`); return;
     }
     setBusy(true);
-    try {
-      for (const email of valid) {
-        const doc = await createDoc("gmail_submissions", { email_address: email, submitted_by: userEmail, status: "pending", rejection_reason: "" });
-        fetch("/api/send-to-telegram", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email_address: email, submitted_by: userEmail, doc_id: doc.$id }) }).catch(() => {});
-        fetch("/api/check-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, doc_id: doc.$id }) }).then(r => r.json()).then(result => { if (result.status === "sub_approved") { toast.success(`${email.split("@")[0]} verified! ✅`); qc.invalidateQueries({ queryKey: ["subs-card", userEmail] }); } else if (result.status === "rejected") { toast.error(`${email.split("@")[0]} rejected`); qc.invalidateQueries({ queryKey: ["subs-card", userEmail] }); } }).catch(() => {});
-      }
-      toast.success(`${valid.length} submitted!`);
-      setMails("");
-      qc.invalidateQueries({ queryKey: ["subs-card", userEmail] });
-      qc.invalidateQueries({ queryKey: ["today-subs", userEmail] });
-      onSubmitted?.();
-    } catch (err) { toast.error(err?.message || "Failed."); }
-    setBusy(false);
+    let ok = 0, dup = 0;
+    for (const email of valid) {
+      try { await createDoc("gmail_submissions", { email_address: email, submitted_by: userEmail, status: "pending" }); ok++; } catch { dup++; }
+    }
+    qc.invalidateQueries({ queryKey: ["subs-card", userEmail] });
+    qc.invalidateQueries({ queryKey: ["today-subs", userEmail] });
+    qc.invalidateQueries({ queryKey: ["my-submissions"] });
+    if (ok > 0) toast.success(`${ok} submitted!`);
+    if (dup > 0) toast.error(`${dup} duplicates skipped.`);
+    setMails(""); setBusy(false); onSubmitted?.();
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-card border border-border rounded-xl p-5 md:p-6">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2"><Mail className="w-5 h-5 text-primary" /><h3 className="font-orbitron text-sm font-bold uppercase">Submit Gmails</h3></div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className={`${TRUST_COLORS[trustLevel]} border text-xs`}><Shield className="w-3 h-3 mr-1" />{trustLevel}</Badge>
-          {isBanned && <Badge className="bg-red-500/20 text-red-400 border-red-500/30 border text-xs">Banned</Badge>}
-          {isRestricted && <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 border text-xs"><AlertTriangle className="w-3 h-3 mr-1" />Restricted</Badge>}
+          <Mail className="w-4 h-4 text-primary" />
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-space">Submit Gmails</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className={`${TRUST_COLORS[trustLevel]} border text-[10px]`}>
+            <Shield className="w-3 h-3 mr-1" />{trustLevel}
+          </Badge>
         </div>
       </div>
-      {rejectionRate > 40 && <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4 text-xs text-red-400 flex items-center gap-2"><AlertTriangle className="w-4 h-4" />High rejection rate ({rejectionRate}%). Submit carefully.</div>}
-      <p className="text-xs text-muted-foreground mb-3">One email per line. {remaining}/{dailyLimit} remaining today.</p>
-      <Textarea placeholder={"example1@gmail.com\nexample2@gmail.com"} value={mails} onChange={(e) => setMails(e.target.value)} className="bg-secondary border-border min-h-[100px] text-sm mb-3" disabled={!submissionsOpen || isBanned || isRestricted || remaining <= 0} />
-      <Button onClick={submit} disabled={busy || !submissionsOpen || isBanned || isRestricted || remaining <= 0} className="w-full bg-primary text-primary-foreground font-semibold">
-        {busy ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}{busy ? "Submitting..." : "Submit"}
-      </Button>
+
+      {isBanned ? (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-center">
+          <AlertTriangle className="w-6 h-6 text-destructive mx-auto mb-2" />
+          <p className="text-sm font-medium text-destructive">Account Banned</p>
+          <p className="text-xs text-muted-foreground mt-1">{profile?.ban_reason || "Contact admin for details."}</p>
+        </div>
+      ) : isRestricted ? (
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 text-center">
+          <AlertTriangle className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
+          <p className="text-sm font-medium text-yellow-400">Account Restricted</p>
+          <p className="text-xs text-muted-foreground mt-1">High rejection rate ({rejectionRate}%). Improve quality to unlock.</p>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+            <span>{remaining}/{dailyLimit} remaining today</span>
+            {rejectionRate > 30 && <span className="text-yellow-400">Rejection rate: {rejectionRate}%</span>}
+          </div>
+          <Textarea placeholder="Paste gmail addresses (one per line)..." value={mails} onChange={e => setMails(e.target.value)} className="bg-accent/30 border-border/50 rounded-xl min-h-[100px] text-sm focus:ring-1 focus:ring-primary/30 mb-3 resize-none" disabled={!submissionsOpen} />
+          <Button onClick={submit} disabled={busy || !submissionsOpen || !mails.trim()} className="w-full gold-gradient text-black font-bold rounded-xl h-11">
+            {busy ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+            {!submissionsOpen ? "Submissions Closed" : "Submit"}
+          </Button>
+        </>
+      )}
+
+      {/* Recent submissions */}
       {subs.length > 0 && (
-        <div className="mt-4 border-t border-border pt-4">
+        <div className="mt-5">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Submissions</p>
+            <p className="text-xs text-muted-foreground font-space uppercase tracking-wider">Recent</p>
             <Link to="/Submissions" className="text-xs text-primary hover:underline">View All</Link>
           </div>
-          <div className="space-y-2 max-h-[200px] overflow-y-auto">
-            {subs.slice(0, 10).map((s, i) => {
-              const st = sc[s.status] || sc.pending;
-              const Icon = st.i;
+          <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+            {subs.slice(0, 10).map(s => {
+              const cfg = sc[s.status] || sc.pending;
+              const I = cfg.i;
               return (
-                <div key={s.$id || i} className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2">
-                  <span className="text-xs text-foreground truncate flex-1 mr-2">{s.email_address}</span>
-                  <Badge variant="outline" className={`${st.c} border text-[10px] shrink-0`}>
-                    <Icon className="w-3 h-3 mr-1" />{st.l}
-                  </Badge>
+                <div key={s.$id} className="flex items-center justify-between bg-accent/20 rounded-xl px-3 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <I className={`w-3.5 h-3.5 shrink-0 ${s.status === "approved" || s.status === "sub_approved" ? "text-green-400" : s.status === "rejected" ? "text-red-400" : "text-yellow-400"}`} />
+                    <span className="text-xs truncate">{s.email_address}</span>
+                  </div>
+                  <Badge variant="outline" className={`${cfg.c} border text-[9px] shrink-0`}>{cfg.l}</Badge>
                 </div>
               );
             })}
