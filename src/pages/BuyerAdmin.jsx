@@ -96,9 +96,9 @@ function BuyerSubmissions() {
           <p className="text-xs text-muted-foreground">Approved</p>
         </div>
         <div className="bg-primary/10 rounded-xl p-3 text-center">
-          <p className="text-2xl font-bold font-orbitron text-primary">\u20A6{amountOwed.toLocaleString()}</p>
-          <p className="text-xs text-muted-foreground">Total Owed ({approvedCount} \u00d7 \u20A6300)</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">\u20A6{(approvedCount * 200).toLocaleString()} sellers + \u20A6{(approvedCount * 100).toLocaleString()} admin</p>
+          <p className="text-2xl font-bold font-orbitron text-primary">₦{amountOwed.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">Total Owed ({approvedCount} × ₦300)</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">₦{(approvedCount * 200).toLocaleString()} sellers + ₦{(approvedCount * 100).toLocaleString()} admin</p>
         </div>
       </div>
 
@@ -286,7 +286,7 @@ function BuyerStats() {
           <p className="text-sm text-muted-foreground mt-1">Pending</p>
         </div>
         <div className="bg-primary/10 rounded-xl p-6 text-center">
-          <p className="text-4xl font-bold font-orbitron text-primary">\u20A6{(approved * 300).toLocaleString()}</p>
+          <p className="text-4xl font-bold font-orbitron text-primary">₦{(approved * 300).toLocaleString()}</p>
           <p className="text-sm text-muted-foreground mt-1">Total Owed</p>
         </div>
       </div>
