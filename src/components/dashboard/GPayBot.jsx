@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { invokeOpenRouter } from "@/lib/openrouter";
-import { X, Send, Loader2, Bot } from "lucide-react";
+import { X, Send, Loader2, Bot, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const WA_LINK = "https://chat.whatsapp.com/JmSWDINefIA5cBLEon0Dz1?mode=gi_t";
@@ -45,9 +45,7 @@ export default function GPayBot() {
   const [loading, setLoading] = useState(false);
   const endRef = useRef(null);
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [msgs]);
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
   const send = async () => {
     if (!input.trim() || loading) return;
@@ -56,13 +54,11 @@ export default function GPayBot() {
     setMsgs((p) => [...p, { role: "user", content: m }]);
     setLoading(true);
     try {
-      const r = await invokeOpenRouter(
-        SYSTEM_PROMPT + "\n\nUser question: " + m
-      );
+      const r = await invokeOpenRouter(SYSTEM_PROMPT + "\n\nUser question: " + m);
       const clean = r.replace(/\*\*/g, "").replace(/##/g, "").replace(/\*/g, "");
       const responseWithLink = clean + "\n\n\ud83d\udce2 Join our WhatsApp group for updates: " + WA_LINK;
       setMsgs((p) => [...p, { role: "bot", content: responseWithLink }]);
-    } catch (err) {
+    } catch {
       setMsgs((p) => [...p, { role: "bot", content: "Sorry, I had trouble responding. Please try again or join our WhatsApp group for help: " + WA_LINK }]);
     }
     setLoading(false);
@@ -71,89 +67,56 @@ export default function GPayBot() {
   return (
     <>
       {!open && (
-        <motion.button
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
-        >
-          <Bot className="w-5 h-5" />
+        <motion.button initial={{ scale: 0 }} animate={{ scale: 1 }} onClick={() => setOpen(true)}
+          className="fixed bottom-20 sm:bottom-6 right-5 z-50 w-14 h-14 rounded-2xl gold-gradient text-black flex items-center justify-center shadow-lg shadow-primary/25 hover:scale-105 transition-transform pulse-dot">
+          <MessageCircle className="w-6 h-6" />
         </motion.button>
       )}
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-6 right-6 z-50 w-[340px] max-w-[calc(100vw-3rem)] bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col"
-            style={{ height: "420px" }}
-          >
-            <div className="flex items-center justify-between p-4 border-b border-border bg-secondary/50">
-              <div className="flex items-center gap-2">
-                <Bot className="w-4 h-4 text-primary" />
-                <p className="text-sm font-bold">
-                  GPay{" "}
-                  <span className="text-primary text-xs font-normal">BOT</span>
-                </p>
+          <motion.div initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="fixed bottom-20 sm:bottom-6 right-5 z-50 w-[360px] max-w-[calc(100vw-2.5rem)] glass-card rounded-2xl shadow-2xl overflow-hidden flex flex-col glow-primary"
+            style={{ height: "440px" }}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border/30">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold font-space">GPay Bot</p>
+                  <p className="text-[10px] text-green-400">Online</p>
+                </div>
               </div>
-              <button onClick={() => setOpen(false)}>
+              <button onClick={() => setOpen(false)} className="p-2 rounded-xl hover:bg-accent transition-colors">
                 <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
+            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {msgs.map((m, i) => (
-                <div
-                  key={i}
-                  className={`flex ${
-                    m.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-xl px-3 py-2 text-sm whitespace-pre-wrap ${
-                      m.role === "user" ? "bg-primary/20" : "bg-secondary"
-                    }`}
-                  >
+                <motion.div key={i} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${m.role === "user" ? "bg-primary/15 text-foreground rounded-br-md" : "bg-accent/60 text-foreground/90 rounded-bl-md"}`}>
                     {m.content.split(WA_LINK).length > 1 ? (
-                      <>
-                        {m.content.split(WA_LINK)[0]}
-                        <a
-                          href={WA_LINK}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#25D366] underline font-medium break-all"
-                        >
-                          Join WhatsApp Group
-                        </a>
-                      </>
-                    ) : (
-                      m.content
-                    )}
+                      <>{m.content.split(WA_LINK)[0]}<a href={WA_LINK} target="_blank" rel="noopener noreferrer" className="text-[#25D366] underline font-medium break-all">Join WhatsApp Group</a></>
+                    ) : m.content}
                   </div>
-                </div>
+                </motion.div>
               ))}
               {loading && (
                 <div className="flex justify-start">
-                  <div className="bg-secondary rounded-xl px-3 py-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  <div className="bg-accent/60 rounded-2xl rounded-bl-md px-4 py-3">
+                    <div className="flex gap-1"><span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce" style={{animationDelay:"0ms"}}/><span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce" style={{animationDelay:"150ms"}}/><span className="w-2 h-2 bg-primary/50 rounded-full animate-bounce" style={{animationDelay:"300ms"}}/></div>
                   </div>
                 </div>
               )}
               <div ref={endRef} />
             </div>
-            <div className="p-3 border-t border-border flex gap-2">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && send()}
-                placeholder="Type a message..."
-                className="flex-1 bg-secondary border border-border rounded-lg px-3 py-2 text-sm"
-              />
-              <button
-                onClick={send}
-                disabled={loading}
-                className="p-2 rounded-lg bg-primary text-primary-foreground"
-              >
+            {/* Input */}
+            <div className="p-3 border-t border-border/30 flex gap-2">
+              <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Ask anything..."
+                className="flex-1 bg-accent/50 border border-border/50 rounded-xl px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary/30 outline-none" />
+              <button onClick={send} disabled={loading} className="p-2.5 rounded-xl gold-gradient text-black transition-transform hover:scale-105">
                 <Send className="w-4 h-4" />
               </button>
             </div>
