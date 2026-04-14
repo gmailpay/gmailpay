@@ -61,7 +61,7 @@ export default function Buyer() {
           { label: "Pending", value: pendingCount, icon: Clock, color: "text-yellow-400" },
           { label: "Approved", value: approvedCount, icon: CheckCircle, color: "text-green-400" },
           { label: "Rejected", value: rejectedCount, icon: XCircle, color: "text-red-400" },
-          { label: "Amount Owed", value: `\u20a6${amountOwed.toLocaleString()}`, icon: CreditCard, color: "text-primary" },
+          { label: "Amount Owed", value: `₦${amountOwed.toLocaleString()}`, icon: CreditCard, color: "text-primary" },
         ].map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
@@ -77,10 +77,10 @@ export default function Buyer() {
       <div className="bg-card border border-border rounded-xl p-4 mb-6 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold">Outstanding Payment</p>
-          <p className="text-xs text-muted-foreground">{approvedCount} approved mails \u00d7 \u20a6300</p>
+          <p className="text-xs text-muted-foreground">{approvedCount} approved mails × ₦300</p>
         </div>
         <Button disabled className="bg-primary/50 text-primary-foreground font-bold">
-          <CreditCard className="w-4 h-4 mr-2" />Pay \u20a6{amountOwed.toLocaleString()} (Coming Soon)
+          <CreditCard className="w-4 h-4 mr-2" />Pay ₦{amountOwed.toLocaleString()} (Coming Soon)
         </Button>
       </div>
 
