@@ -46,7 +46,7 @@ export default function WithdrawDialog({ open, onClose, userEmail, withdrawableA
         <div className="space-y-4 py-4">
           <div className="bg-accent/50 rounded-xl p-4 text-center glow-primary">
             <p className="text-xs text-muted-foreground mb-1">Withdrawable Amount</p>
-            <p className="font-orbitron text-3xl font-bold gradient-text">\u20A6{withdrawableAmount?.toLocaleString()}</p>
+            <p className="font-orbitron text-3xl font-bold gradient-text">₦{withdrawableAmount?.toLocaleString()}</p>
           </div>
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">Account Name</Label>
