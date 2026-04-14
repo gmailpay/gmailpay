@@ -37,7 +37,7 @@ export default function MilestoneCard({ approvedCount }) {
           </div>
         </div>
         <span className={`font-orbitron text-sm font-bold ${b ? "text-green-400" : "text-muted-foreground"}`}>
-          {b ? "\u2713 " : ""}\u20A6500
+          {b ? "✓ " : ""}₦500
         </span>
       </div>
     </motion.div>
