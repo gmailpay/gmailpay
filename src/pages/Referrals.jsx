@@ -45,7 +45,7 @@ export default function Referrals() {
         {[
           { icon: Users, color: "text-primary", bg: "bg-primary/10", value: refs.length, label: "Referred" },
           { icon: Gift, color: "text-green-400", bg: "bg-green-500/10", value: bp, label: "Bonuses" },
-          { icon: Zap, color: "text-primary", bg: "bg-primary/10", value: `\u20A6${te.toLocaleString()}`, label: "Earned" },
+          { icon: Zap, color: "text-primary", bg: "bg-primary/10", value: `₦${te.toLocaleString()}`, label: "Earned" },
         ].map(({ icon: I, color, bg, value, label }, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.05 }}
             className="glass-card glass-card-hover rounded-2xl p-4 text-center">
@@ -69,8 +69,8 @@ export default function Referrals() {
               <div key={r.$id} className="px-4 py-3 flex items-center justify-between hover:bg-accent/30 transition-colors">
                 <p className="text-sm text-foreground/80">{r.referred_email}</p>
                 <div className="flex gap-1.5">
-                  {r.referral_bonus_paid && <span className="text-[10px] bg-green-500/15 text-green-400 px-2 py-0.5 rounded-lg">+\u20A6200</span>}
-                  {r.power_bonus_paid && <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-lg">+\u20A61k</span>}
+                  {r.referral_bonus_paid && <span className="text-[10px] bg-green-500/15 text-green-400 px-2 py-0.5 rounded-lg">+₦200</span>}
+                  {r.power_bonus_paid && <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-lg">+₦1k</span>}
                 </div>
               </div>
             ))}
