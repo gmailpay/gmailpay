@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Mail, Users, Settings, X, Megaphone, Menu } from "lucide-react";
+import { LayoutDashboard, Mail, Users, Settings, X, Megaphone, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { listDocs, Query } from "@/lib/appwrite";
 import InstallPWA from "@/components/InstallPWA";
@@ -12,6 +12,7 @@ export default function AppLayout() {
   const [code, setCode] = useState("");
   const [broadcasts, setBroadcasts] = useState([]);
   const [dismissed, setDismissed] = useState(new Set());
+  const [apkDismissed, setApkDismissed] = useState(() => localStorage.getItem("apk-dismissed") === "1");
 
   useEffect(() => {
     const fetchBroadcasts = async () => {
@@ -32,15 +33,19 @@ export default function AppLayout() {
   ];
   const go = () => { if (code === "808254") navigate("/Admin"); else if (code === "449922") navigate("/Admin1"); else if (code.toUpperCase() === "INK") navigate("/BuyerAdmin?auth=1"); else alert("Invalid"); setCode(""); setSa(false); };
   const activeBroadcasts = broadcasts.filter((b) => !dismissed.has(b.$id));
+  const dismissApk = () => { setApkDismissed(true); localStorage.setItem("apk-dismissed", "1"); };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b border-border/30 bg-card/60 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="font-orbitron text-xl md:text-2xl font-bold tracking-wider">
-            <span className="text-foreground">GMAIL</span><span className="gradient-text">PAY</span>
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <img src="/gmailpay-logo.jpg" alt="G" className="w-8 h-8 rounded-lg object-cover" />
+            <h1 className="font-orbitron text-xl md:text-2xl font-bold tracking-wider">
+              <span className="text-foreground">GMAIL</span><span className="gradient-text">PAY</span>
+            </h1>
+          </div>
           {/* Desktop nav */}
           <div className="hidden sm:flex items-center gap-1">
             {nav.map((i) => {
@@ -57,7 +62,6 @@ export default function AppLayout() {
               <Settings className="w-4 h-4" />
             </button>
           </div>
-          {/* Mobile: settings only in header */}
           <button onClick={() => setSa(!sa)} className="sm:hidden p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent">
             <Settings className="w-4 h-4" />
           </button>
@@ -74,31 +78,33 @@ export default function AppLayout() {
         </AnimatePresence>
       </header>
 
-      {/* Password notice banner - sleek and visible */}
-      <div className="notice-banner py-2.5 px-4">
-        <p className="text-center text-xs md:text-sm font-semibold text-primary/90 tracking-wide max-w-6xl mx-auto">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-            All Gmails MUST use password: <span className="font-bold text-primary">iffyboi77</span>
-            <span className="mx-2 text-border">|</span>
-            Chat with the <span className="font-bold text-primary">GPay Bot</span> for help
-          </span>
-        </p>
+      {/* Password notice - premium styled */}
+      <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border-b border-primary/10">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-center gap-3">
+          <AlertCircle className="w-4 h-4 text-primary shrink-0" />
+          <p className="text-xs md:text-sm font-medium text-foreground/90">
+            All Gmails MUST use password: <span className="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">iffyboi77</span>
+            <span className="hidden sm:inline text-muted-foreground ml-2">|  Chat with the <span className="text-primary font-semibold">GPay Bot</span> for help</span>
+          </p>
+        </div>
       </div>
 
-      {/* APK Download Banner */}
-      <div className="mx-4 mt-3 max-w-6xl lg:mx-auto w-auto">
-        <a href="https://github.com/gmailpay/gmailpay/releases/download/v1.0.0/app-release.apk" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 glass-card glass-card-hover rounded-2xl px-4 py-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-            <svg className="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      {/* APK Download Banner - dismissible */}
+      {!apkDismissed && (
+        <div className="mx-4 mt-3 max-w-6xl lg:mx-auto w-auto">
+          <div className="flex items-center gap-3 glass-card glass-card-hover rounded-2xl px-4 py-3">
+            <img src="/gmailpay-logo.jpg" alt="GmailPay" className="w-10 h-10 rounded-xl object-cover shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">Download Android App</p>
+              <p className="text-xs text-muted-foreground">Get the full GmailPay experience</p>
+            </div>
+            <a href="https://github.com/gmailpay/gmailpay/releases/download/v1.0.0/app-release.apk" target="_blank" rel="noopener noreferrer" className="px-4 py-2 gold-gradient text-black rounded-xl text-xs font-bold shrink-0">GET</a>
+            <button onClick={dismissApk} className="p-1.5 rounded-lg hover:bg-accent shrink-0">
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground">Download Android App</p>
-            <p className="text-xs text-muted-foreground">Get the full GmailPay experience</p>
-          </div>
-          <span className="text-xs text-primary font-semibold shrink-0">GET</span>
-        </a>
-      </div>
+        </div>
+      )}
 
       <InstallPWA />
 
