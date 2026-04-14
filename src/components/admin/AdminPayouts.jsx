@@ -31,11 +31,11 @@ export default function AdminPayouts() {
       <div className="grid grid-cols-2 gap-3">
         <div className="glass-card rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1"><Wallet className="w-4 h-4 text-yellow-400" /><span className="text-xs text-muted-foreground">Pending</span></div>
-          <p className="font-orbitron text-lg font-bold text-yellow-400">\u20A6{totalPending.toLocaleString()}</p>
+          <p className="font-orbitron text-lg font-bold text-yellow-400">₦{totalPending.toLocaleString()}</p>
         </div>
         <div className="glass-card rounded-xl p-4">
           <div className="flex items-center gap-2 mb-1"><Banknote className="w-4 h-4 text-green-400" /><span className="text-xs text-muted-foreground">Total Paid</span></div>
-          <p className="font-orbitron text-lg font-bold text-green-400">\u20A6{totalPaid.toLocaleString()}</p>
+          <p className="font-orbitron text-lg font-bold text-green-400">₦{totalPaid.toLocaleString()}</p>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export default function AdminPayouts() {
             <div key={w.$id} className="glass-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium">{w.user_email}</p>
-                <p className="text-xs text-muted-foreground">\u20A6{w.amount?.toLocaleString()} \u2022 {w.bank_name} \u2022 {w.bank_account_number}</p>
+                <p className="text-xs text-muted-foreground">₦{w.amount?.toLocaleString()} \u2022 {w.bank_name} \u2022 {w.bank_account_number}</p>
                 {w.account_name && <p className="text-xs text-primary">Name: {w.account_name}</p>}
                 <p className="text-[10px] text-muted-foreground">{w.$createdAt ? format(new Date(w.$createdAt), "MMM d, yyyy") : ""}</p>
               </div>
