@@ -1,2 +1,40 @@
-import{motion}from'framer-motion';
-export default function BalanceCard({pendingCount,approvedCount,paidAmount,totalBalance}){return(<motion.div initial={{opacity:0,y:20}}animate={{opacity:1,y:0}}className='bg-card border border-border rounded-xl p-5 md:p-6'><p className='text-xs text-muted-foreground uppercase tracking-widest mb-2'>Your GCreator Status</p><h2 className='font-orbitron text-3xl md:text-4xl font-bold text-foreground mb-4'>{totalBalance.toLocaleString()}<span className='text-lg text-primary'> NGN</span></h2><div className='flex gap-6 text-sm'><div><span className='text-muted-foreground'>Pending: </span><span className='text-yellow-400 font-semibold'>{pendingCount}</span></div><div><span className='text-muted-foreground'>Approved: </span><span className='text-green-400 font-semibold'>{approvedCount}</span></div><div><span className='text-muted-foreground'>Paid: </span><span className='text-primary font-semibold'>{paidAmount.toLocaleString()}</span></div></div></motion.div>);}
+import { motion } from "framer-motion";
+import { TrendingUp, Clock, CheckCircle, Banknote } from "lucide-react";
+
+export default function BalanceCard({ pendingCount, approvedCount, paidAmount, totalBalance }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-2xl p-6 glow-primary relative overflow-hidden">
+      {/* Ambient glow */}
+      <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="relative">
+        <div className="flex items-center gap-2 mb-1">
+          <Banknote className="w-4 h-4 text-primary" />
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-space">Your Balance</p>
+        </div>
+        <h2 className="font-orbitron text-4xl md:text-5xl font-bold text-foreground mt-2 mb-5">
+          {totalBalance.toLocaleString()}
+          <span className="text-lg text-primary ml-1">NGN</span>
+        </h2>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-accent/50 rounded-xl p-3 text-center">
+            <Clock className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
+            <p className="font-orbitron text-lg font-bold text-yellow-400">{pendingCount}</p>
+            <p className="text-[10px] text-muted-foreground">Pending</p>
+          </div>
+          <div className="bg-accent/50 rounded-xl p-3 text-center">
+            <CheckCircle className="w-4 h-4 text-green-400 mx-auto mb-1" />
+            <p className="font-orbitron text-lg font-bold text-green-400">{approvedCount}</p>
+            <p className="text-[10px] text-muted-foreground">Approved</p>
+          </div>
+          <div className="bg-accent/50 rounded-xl p-3 text-center">
+            <TrendingUp className="w-4 h-4 text-primary mx-auto mb-1" />
+            <p className="font-orbitron text-lg font-bold text-primary">{paidAmount.toLocaleString()}</p>
+            <p className="text-[10px] text-muted-foreground">Paid</p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
