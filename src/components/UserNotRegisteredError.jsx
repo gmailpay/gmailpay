@@ -1,1 +1,15 @@
-export default function UserNotRegisteredError(){return(<div className='flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-white to-slate-50'><div className='max-w-md w-full p-8 bg-white rounded-lg shadow-lg border border-slate-100'><div className='text-center'><h1 className='text-3xl font-bold text-slate-900 mb-4'>Access Restricted</h1><p className='text-slate-600 mb-8'>You are not registered. Contact the app administrator for access.</p></div></div></div>);}
+import { ShieldX } from "lucide-react";
+
+export default function UserNotRegisteredError() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
+      <div className="glass-card rounded-2xl p-8 max-w-md w-full text-center glow-primary">
+        <div className="w-16 h-16 rounded-2xl bg-destructive/15 flex items-center justify-center mx-auto mb-5">
+          <ShieldX className="w-8 h-8 text-destructive" />
+        </div>
+        <h1 className="font-orbitron text-2xl font-bold text-foreground mb-3">Access Restricted</h1>
+        <p className="text-sm text-muted-foreground">You are not registered. Contact the app administrator for access.</p>
+      </div>
+    </div>
+  );
+}
