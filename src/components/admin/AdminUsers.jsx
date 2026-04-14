@@ -44,12 +44,12 @@ export default function AdminUsers() {
         </div>
         <div className="glass-card rounded-xl p-4 text-center">
           <Banknote className="w-5 h-5 text-green-400 mx-auto mb-1" />
-          <p className="font-orbitron text-xl font-bold text-green-400">\u20A6{totalPaid.toLocaleString()}</p>
+          <p className="font-orbitron text-xl font-bold text-green-400">₦{totalPaid.toLocaleString()}</p>
           <p className="text-[10px] text-muted-foreground">Total Paid</p>
         </div>
         <div className="glass-card rounded-xl p-4 text-center">
           <TrendingDown className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
-          <p className="font-orbitron text-xl font-bold text-yellow-400">\u20A6{totalOwed.toLocaleString()}</p>
+          <p className="font-orbitron text-xl font-bold text-yellow-400">₦{totalOwed.toLocaleString()}</p>
           <p className="text-[10px] text-muted-foreground">Total Owed</p>
         </div>
       </div>
@@ -78,9 +78,9 @@ export default function AdminUsers() {
                   <div className="bg-red-500/10 rounded-lg p-2 text-center"><p className="font-semibold text-red-400">{s.rejected}</p><p className="text-[9px] text-muted-foreground">Rejected</p></div>
                 </div>
                 <div className="flex items-center justify-between bg-accent/20 rounded-lg px-3 py-2 text-xs">
-                  <span>Paid: <span className="text-green-400 font-semibold">\u20A6{s.paid.toLocaleString()}</span></span>
-                  <span>Owed: <span className="text-yellow-400 font-semibold">\u20A6{s.owed.toLocaleString()}</span></span>
-                  <span>Earned: <span className="text-primary font-semibold">\u20A6{s.earned.toLocaleString()}</span></span>
+                  <span>Paid: <span className="text-green-400 font-semibold">₦{s.paid.toLocaleString()}</span></span>
+                  <span>Owed: <span className="text-yellow-400 font-semibold">₦{s.owed.toLocaleString()}</span></span>
+                  <span>Earned: <span className="text-primary font-semibold">₦{s.earned.toLocaleString()}</span></span>
                 </div>
               </div>
             );
