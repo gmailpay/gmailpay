@@ -27,7 +27,6 @@ export default function Dashboard() {
         const u = { id: au.$id, email: au.email, full_name: p?.full_name || "" };
         setUser(u);
         setProfile(p);
-        // Auto-generate short referral link if missing
         if (p && !p.referral_short_url && u.email) {
           fetch("/api/generate-short-link", {
             method: "POST",
@@ -58,54 +57,60 @@ export default function Dashboard() {
   const tb = ae + mb - pw - pW, cw = tb >= 1000;
   const refresh = () => { qc.invalidateQueries({ queryKey: ["my-submissions"] }); qc.invalidateQueries({ queryKey: ["my-withdrawals"] }); };
 
-  // Check for recently paid withdrawals (within last 1 hour)
   const recentlyPaid = wds.find(w => {
     if (w.status !== "paid") return false;
     const paidTime = w.paid_at ? new Date(w.paid_at) : (w.$updatedAt ? new Date(w.$updatedAt) : null);
     if (!paidTime) return false;
-    const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    return paidTime > hourAgo;
+    return paidTime > new Date(Date.now() - 60 * 60 * 1000);
   });
   const showPaymentBanner = !!recentlyPaid && !dismissedBanner;
 
-  if (!user) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" /></div>;
+  if (!user) return (
+    <div className="flex items-center justify-center py-20">
+      <div className="text-center">
+        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-xs text-muted-foreground">Loading...</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Welcome header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground font-space">Welcome back,</p>
+          <h2 className="font-orbitron text-lg font-bold tracking-wider">{user.full_name || "Creator"}</h2>
+        </div>
+        <Button onClick={() => cw && setWo(true)} disabled={!cw} size="sm" className={`rounded-xl font-semibold text-xs ${cw ? "gold-gradient text-black" : "bg-accent text-muted-foreground"}`}>
+          <Wallet className="w-4 h-4 mr-1.5" />
+          Withdraw
+        </Button>
+      </div>
+
+      {/* Payment success banner */}
       <AnimatePresence>
         {showPaymentBanner && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="relative bg-gradient-to-r from-green-500/20 via-emerald-500/15 to-green-500/20 border border-green-500/30 rounded-xl p-4 md:p-5"
-          >
-            <button onClick={() => setDismissedBanner(true)} className="absolute top-2 right-2 p-1 rounded-lg hover:bg-green-500/20 text-green-400/60 hover:text-green-400"><X className="w-4 h-4" /></button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
-                <PartyPopper className="w-5 h-5 text-green-400" />
-              </div>
-              <div>
-                <p className="text-sm md:text-base font-bold text-green-400">Your payment has been made! 🎉</p>
-                <p className="text-xs md:text-sm text-green-400/80 mt-0.5">Create more Gmails to earn more</p>
-              </div>
-            </div>
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-2xl px-4 py-3">
+            <PartyPopper className="w-5 h-5 text-green-400 shrink-0" />
+            <p className="text-sm text-green-400 flex-1">Payment of <span className="font-bold">\u20A6{recentlyPaid.amount?.toLocaleString()}</span> received!</p>
+            <button onClick={() => setDismissedBanner(true)} className="p-1 rounded-lg hover:bg-green-500/10"><X className="w-4 h-4 text-green-400" /></button>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Cards grid */}
+      <BalanceCard pendingCount={pc} approvedCount={ac} paidAmount={pw} totalBalance={tb} />
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <BalanceCard pendingCount={pc} approvedCount={ac} paidAmount={pw} totalBalance={tb} />
         <MilestoneCard approvedCount={ac} />
+        <ReserveUsernameCard userEmail={user.email} />
       </div>
-      <div className="flex justify-center">
-        <Button onClick={() => setWo(true)} disabled={!cw} className="gold-gradient text-black font-bold px-8 py-3 rounded-xl text-base disabled:opacity-40">
-          <Wallet className="w-5 h-5 mr-2" />{cw ? `Withdraw \u20A6${tb.toLocaleString()}` : `\u20A6${(1000 - tb).toLocaleString()} more`}
-        </Button>
-      </div>
-      <ReserveUsernameCard userEmail={user.email} />
+
       <SubmitMailsCard userEmail={user.email} onSubmitted={refresh} submissionsOpen={so} profile={profile} />
-      <GPayBot />
+
       <WithdrawDialog open={wo} onClose={() => setWo(false)} userEmail={user.email} withdrawableAmount={tb} onWithdrawn={refresh} />
+      <GPayBot />
     </div>
   );
 }
