@@ -22,26 +22,44 @@ export default function Dashboard() {
     (async () => {
       try {
         const au = await account.get();
-        const profiles = await listDocs("profiles", [Query.equal("user_id", au.$id)]);
-        const p = profiles[0] || null;
-        const u = { id: au.$id, email: au.email, full_name: p?.full_name || "" };
+        // Set basic user immediately so page renders
+        const u = { id: au.$id, email: au.email, full_name: au.name || "" };
         setUser(u);
-        setProfile(p);
-        if (p && !p.referral_short_url && u.email) {
-          fetch("/api/generate-short-link", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: u.email, profile_id: p.$id }),
-          }).then(r => r.json()).then(data => {
-            if (data.short_url) setProfile(prev => ({ ...prev, referral_short_url: data.short_url }));
-          }).catch(() => {});
+        
+        // Try to load profile (may fail if DB is temporarily unavailable)
+        try {
+          const profiles = await listDocs("profiles", [Query.equal("user_id", au.$id)]);
+          const p = profiles[0] || null;
+          if (p) {
+            setUser(prev => ({ ...prev, full_name: p.full_name || prev.full_name }));
+            setProfile(p);
+          }
+          if (p && !p.referral_short_url && u.email) {
+            fetch("/api/generate-short-link", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: u.email, profile_id: p.$id }),
+            }).then(r => r.json()).then(data => {
+              if (data.short_url) setProfile(prev => ({ ...prev, referral_short_url: data.short_url }));
+            }).catch(() => {});
+          }
+        } catch (profileErr) {
+          console.warn("Could not load profile:", profileErr);
         }
-        const ref = new URLSearchParams(window.location.search).get("ref");
-        if (ref && ref !== u.email) {
-          const ex = await listDocs("referrals", [Query.equal("referred_email", u.email)]);
-          if (!ex || ex.length === 0) await createDoc("referrals", { referrer_email: ref, referred_email: u.email, referral_bonus_paid: false, power_bonus_paid: false });
+        
+        // Handle referral tracking
+        try {
+          const ref = new URLSearchParams(window.location.search).get("ref");
+          if (ref && ref !== u.email) {
+            const ex = await listDocs("referrals", [Query.equal("referred_email", u.email)]);
+            if (!ex || ex.length === 0) await createDoc("referrals", { referrer_email: ref, referred_email: u.email, referral_bonus_paid: false, power_bonus_paid: false });
+          }
+        } catch (refErr) {
+          console.warn("Could not process referral:", refErr);
         }
-      } catch {}
+      } catch (authErr) {
+        console.error("Auth failed:", authErr);
+      }
     })();
   }, []);
 
