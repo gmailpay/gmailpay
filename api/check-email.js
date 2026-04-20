@@ -5,11 +5,12 @@ export default async function handler(req, res) {
   if (!email || !doc_id) return res.status(400).json({ error: "email and doc_id required" });
   
   const domain = email.split("@")[1]?.toLowerCase();
+  const username = email.split("@")[0]?.toLowerCase();
   
-  // Only reject obviously invalid emails (not Gmail)
+  // Reject non-Gmail addresses immediately
   if (!domain || !["gmail.com", "googlemail.com"].includes(domain)) {
-    const awEndpoint = process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1";
-    const awProjectId = process.env.APPWRITE_PROJECT_ID;
+    const awEndpoint = process.env.APPWRITE_ENDPOINT || "https://nyc.cloud.appwrite.io/v1";
+    const awProjectId = process.env.APPWRITE_PROJECT_ID || "69e62b1e002805ef3412";
     const awApiKey = process.env.APPWRITE_API_KEY;
     if (awProjectId && awApiKey) {
       try {
@@ -23,6 +24,17 @@ export default async function handler(req, res) {
     return res.status(200).json({ status: "rejected", reason: "Not a Gmail address" });
   }
   
-  // ALL Gmail emails stay pending - the CodeWords bot (every 5 min) does the real SMTP check
-  return res.status(200).json({ status: "pending", reason: "Will be verified by the bot shortly" });
+  // Check if username ends with "prex" - these are trusted submissions
+  const endsWithPrex = username.endsWith("prex");
+  
+  // All Gmail emails stay pending - the CodeWords bot handles verification
+  // Emails ending with "prex" will be auto-approved by the bot if they exist
+  // Other emails stay pending for manual review
+  return res.status(200).json({ 
+    status: "pending", 
+    trusted: endsWithPrex,
+    reason: endsWithPrex 
+      ? "Trusted submission - will be auto-verified shortly" 
+      : "Will be reviewed by admin"
+  });
 }
