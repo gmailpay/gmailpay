@@ -4,8 +4,8 @@ export default async function handler(req, res) {
   const update = req.body;
   const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   const APPWRITE_KEY = process.env.APPWRITE_API_KEY;
-  const ENDPOINT = "https://fra.cloud.appwrite.io/v1";
-  const PROJECT = "69c48422001e3dc03352";
+  const ENDPOINT = "https://nyc.cloud.appwrite.io/v1";
+  const PROJECT = "69e62b1e002805ef3412";
   const DB = "gmailpay";
   const COL = "gmail_submissions";
   const SUBS_COL = "telegram_subscribers";
